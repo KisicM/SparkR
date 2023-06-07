@@ -8,7 +8,7 @@ spark_install()
 sc <- sparklyr::spark_connect(master = "local")
 
 
-datasetPath <- "/data/dataset.csv"
+datasetPath <- "/data/btcusd.csv"
 df <- spark_read_csv(sc, name = "my_data", path = datasetPath, header = TRUE, infer_schema = TRUE)
 
 glimpse(df)

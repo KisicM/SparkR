@@ -20,3 +20,28 @@
 1686095866248:glimpse(df)
 1686095866439:head(df)
 1686095866616:spark_disconnect(sc)
+1686132659212:spark_disconnect(sc)
+1686132667010:library(sparklyr)
+1686132667489:library(dplyr)
+1686132667547:# Install
+1686132667574:spark_install()
+1686132801835:# Connect
+1686132801856:sc <- sparklyr::spark_connect(master = "local")
+1686132883570:datasetPath <- "/data/dataset.csv"
+1686132883596:df <- spark_read_csv(sc, name = "my_data", path = datasetPath, header = TRUE, infer_schema = TRUE)
+1686132883635:glimpse(df)
+1686132883658:head(df)
+1686132883695:spark_disconnect(sc)
+1686133099442:# Connect
+1686133099474:sc <- sparklyr::spark_connect(master = "local")
+1686133149828:datasetPath <- "/data/dataset.csv"
+1686133152659:df <- spark_read_csv(sc, name = "my_data", path = datasetPath, header = TRUE, infer_schema = TRUE)
+1686133161380:glimpse(df)
+1686133161769:head(df)
+1686133165548:spark_disconnect(sc)
+1686134526938:# Connect
+1686134526966:sc <- sparklyr::spark_connect(master = "local")
+1686134636103:datasetPath <- "/data/btcusd.csv"
+1686134639084:df <- spark_read_csv(sc, name = "my_data", path = datasetPath, header = TRUE, infer_schema = TRUE)
+1686134659686:glimpse(df)
+1686134677213:head(df)
