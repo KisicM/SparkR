@@ -1,10 +1,14 @@
 install.packages("tidyverse", repos = "https://cran.rstudio.com")
 install.packages("rlang", repos = "https://cran.rstudio.com") 
+install.packages("dplyr", repos = "https://cran.rstudio.com") 
+install.packages("dbplyr", repos = "https://cran.rstudio.com") 
+install.packages("sparklyr", repos = "https://cran.rstudio.com") 
+
 library(tidyr)
+library(dbplyr)
 library(sparklyr)
 library(dplyr)
 library(ggplot2)
-library(magrittr)
 
 
 # Install
@@ -125,7 +129,6 @@ bayes_accuracy <- ml_evaluate(bayes_model, dataset=testFiltered)$Accuracy
 svc_accuracy <- ml_evaluate(svc_model, dataset=testFiltered)$Accuracy
 dt_accuracy <- ml_evaluate(dt_model, dataset=testFiltered)$Accuracy
 
-# 4-trostruko ukrstanje
 k_cross_fold_validation <- function(dataset, model, formula){
   dataset <- dataset %>%
     sdf_random_split(seed=1,
@@ -153,19 +156,18 @@ k_cross_fold_validation <- function(dataset, model, formula){
   ) / 4
 }
 
-bayes_k_cross_fold_accuracy <- k_cross_fold_validation(water.dataset.filtered, ml_naive_bayes, formula)
-svc_k_cross_fold_accuracy <- k_cross_fold_validation(water.dataset.filtered, ml_linear_svc, formula)
-dt_k_cross_fold_accuracy <- k_cross_fold_validation(water.dataset.filtered, ml_decision_tree_classifier, formula)
+bayes_k_cross_fold_accuracy <- k_cross_fold_validation(trainFiltered, ml_naive_bayes, formula)
+svc_k_cross_fold_accuracy <- k_cross_fold_validation(trainFiltered, ml_linear_svc, formula)
+dt_k_cross_fold_accuracy <- k_cross_fold_validation(trainFiltered, ml_decision_tree_classifier, formula)
 
-knitr::kable(array(c("Bayes-ov model", "Mašina potpornih vektora", "Stablo odlučivanja",
-                     bayes_accuracy, svc_accuracy, dt_accuracy,
-                     bayes_k_cross_fold_accuracy, svc_k_cross_fold_accuracy, dt_k_cross_fold_accuracy),
-                   dim = c(3, 3)),
-             col.names = c("Model", "Preciznost korišćenjem validacionog skupa", "Preciznost korišćenjem 4-strukog ukrštanja"),
-             label = "Poređenje tačnosti različitih klasifikacionih modela u odnosu na načine validacije",
-             align = "ccc",
-             format = "html"
-) %>%
-  kableExtra::kable_styling(bootstrap_options = "bordered", full_width = F, font_size = 16)
+df <- data.frame(bayes_accuracy=bayes_accuracy,
+                 bayes_k_cross_fold_accuracy=bayes_k_cross_fold_accuracy,
+                 svc_accuracy=svc_accuracy,
+                 svc_k_cross_fold_accuracy=svc_k_cross_fold_accuracy,
+                 dt_accuracy=dt_accuracy,
+                 dt_k_cross_fold_accuracy=dt_k_cross_fold_accuracy)
+print(df)
+
+#
 
 spark_disconnect(sc)

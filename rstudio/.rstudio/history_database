@@ -1916,3 +1916,308 @@
 1689201478633:library(magrittr)
 1689201537875:library(tidyr)
 1689201597245:install.packages("rlang", repos = "https://cran.rstudio.com")
+1689201639043:# Install
+1689201639046:spark_install()
+1689201640856:# Connect
+1689201640859:sc <- sparklyr::spark_connect(master = "local")
+1689201644773:datasetPath <- "/data/train.csv"
+1689201644773:trainSet <- spark_read_csv(sc, name = "train", path = datasetPath, header = TRUE, infer_schema = TRUE)
+1689201650795:trainSet <- na.omit(trainSet)
+1689201651354:datasetPath <- "/data/test.csv"
+1689201651355:testSet <- spark_read_csv(sc, name = "test", path = datasetPath, header = TRUE, infer_schema = TRUE)
+1689201652387:testSet <- na.omit(testSet)
+1689201652599:# Select columns:
+1689201652600:trainFiltered <- trainSet %>% select(Gender, Age, Type_of_Travel, Flight_Distance, Inflight_service, satisfaction)
+1689201652601:trainFiltered <- trainFiltered %>% mutate(satisfaction = switch(satisfaction,
+1689201652602:"satisfied"=1,
+1689201652602:"neutral or dissatisfied"=0))
+1689201652603:testFiltered <- testSet %>% select(Gender, Age, Type_of_Travel, Flight_Distance, Inflight_service, satisfaction)
+1689201653536:testFiltered <- testFiltered %>% mutate(satisfaction = switch(satisfaction,
+1689201653536:"satisfied"=1,
+1689201653537:"neutral or dissatisfied"=0))
+1689201655639:#1
+1689201655643:formula <- satisfaction ~ Gender + Age + Type_of_Travel + Flight_Distance + Inflight_service
+1689201657006:samples <- c(1:4)
+1689201657262:max_iterations <- samples * 4
+1689201657563:weighted_precision <- samples
+1689201657792:weighted_recall <- samples
+1689201658010:weighted_f_measure <- samples
+1689201658240:area_under_roc <- samples
+1689201658622:accuracy <- samples
+1689201660276:for(i in samples){
+1689201660277:model <- ml_logistic_regression(trainFiltered,
+1689201660277:formula,
+1689201660278:max_iter = max_iterations[i],
+1689201660279:family = "binomial")
+1689201660279:evaluation <- ml_evaluate(model, dataset=testFiltered)
+1689201660280:weighted_precision[i] <- evaluation$weighted_precision()
+1689201660281:weighted_recall[i] <- evaluation$weighted_recall()
+1689201660282:weighted_f_measure[i] <- evaluation$weighted_f_measure()
+1689201660283:area_under_roc[i] <- evaluation$area_under_roc()
+1689201660284:accuracy[i] <- evaluation$accuracy()
+1689201660285:}
+1689201676493:df <- data.frame(i=max_iterations,
+1689201676496:wp=weighted_precision,
+1689201676497:wr=weighted_recall,
+1689201676498:wf=weighted_f_measure,
+1689201676499:aur=area_under_roc,
+1689201676500:a=accuracy)
+1689201677341:print(df)
+1689201678704:p1 <- df %>%
+1689201678705:ggplot(aes(i, wp, color=wp)) +
+1689201678706:geom_line(size=2) +
+1689201678707:scale_x_continuous(breaks=max_iterations) +
+1689201678707:scale_y_continuous(breaks=weighted_precision) +
+1689201678708:theme(text = element_text(size = 16)) +
+1689201678709:labs(x="Iterations", y="Precision")
+1689201679318:p2 <- df %>%
+1689201679320:ggplot(aes(i, wr, color=wr)) +
+1689201679321:geom_line(size=2) +
+1689201679322:scale_x_continuous(breaks=max_iterations) +
+1689201679323:scale_y_continuous(breaks=weighted_recall) +
+1689201679323:theme(text = element_text(size = 16)) +
+1689201679324:labs(x="Iterations", y="Recall")
+1689201679869:p3 <- df %>%
+1689201679872:ggplot(aes(i, a, color=a)) +
+1689201679872:geom_line(size=2) +
+1689201679873:scale_x_continuous(breaks=max_iterations) +
+1689201679874:scale_y_continuous(breaks=accuracy) +
+1689201679874:theme(text = element_text(size = 16)) +
+1689201679875:labs(x="Iterations", y="Accuracy")
+1689201680247:p4 <- df %>%
+1689201680250:ggplot(aes(i, aur, color=aur)) +
+1689201680250:geom_line(size=2) +
+1689201680251:scale_x_continuous(breaks=max_iterations) +
+1689201680252:scale_y_continuous(breaks=area_under_roc) +
+1689201680252:theme(text = element_text(size = 16)) +
+1689201680253:labs(x="Iterations", y="Area under ROC")
+1689201680639:p5 <- df %>%
+1689201680639:ggplot(aes(i, wf, color=wf)) +
+1689201680640:geom_line(size=2) +
+1689201680641:scale_x_continuous(breaks=max_iterations) +
+1689201680641:scale_y_continuous(breaks=weighted_f_measure) +
+1689201680642:theme(text = element_text(size = 16)) +
+1689201680643:labs(x="Iterations", y="F measure")
+1689201681341:p1
+1689201682521:p2
+1689201683627:p3
+1689201685209:p4
+1689201686611:p5
+1689201693840:install.packages("rlang", repos = "https://cran.rstudio.com")
+1689201698478:install.packages("rlang", repos = "https://cran.rstudio.com")
+1689201703798:install.packages("rlang", repos = "https://cran.rstudio.com")
+1689201712285:install.packages("rlang", repos = "https://cran.rstudio.com")
+1689201788093:library(tidyr)
+1689201789337:library(sparklyr)
+1689201789743:library(dplyr)
+1689201790028:library(ggplot2)
+1689201790293:library(magrittr)
+1689201811647:#2
+1689201811650:bayes_model <- ml_naive_bayes(trainFiltered, formula)
+1689201820712:svc_model <- ml_linear_svc(trainFiltered, formula)
+1689201822337:dt_model <- ml_decision_tree_classifier(trainFiltered, formula)
+1689201823875:bayes_accuracy <- ml_evaluate(bayes_model, dataset=testFiltered)$Accuracy
+1689201834421:library(tidyr)
+1689201836455:library(sparklyr)
+1689201861568:install.packages("tidyverse", repos = "https://cran.rstudio.com")
+1689201873906:library(sparklyr)
+1689201923075:install.packages("dplyr", repos = "https://cran.rstudio.com")
+1689201927766:install.packages("dplyr", repos = "https://cran.rstudio.com")
+1689201931413:install.packages("dplyr", repos = "https://cran.rstudio.com")
+1689201932989:install.packages("dplyr", repos = "https://cran.rstudio.com")
+1689201948117:library(tidyr)
+1689201949096:library(sparklyr)
+1689201952688:library(dplyr)
+1689201962186:library(ggplot2)
+1689201963364:library(magrittr)
+1689202009178:library(sparklyr)
+1689202013740:library(tidyr)
+1689202016894:library(dplyr)
+1689202019837:library(ggplot2)
+1689202022567:library(sparklyr)
+1689202028769:# Install
+1689202028770:spark_install()
+1689202066402:library(sparklyr)
+1689202066423:library(dplyr)
+1689202066424:sc <- sparklyr::spark_connect(master = "local")
+1689202103464:library(dbplyr)
+1689202107498:library(sparklyr)
+1689202128382:library(tidyr)
+1689202129980:library(sparklyr)
+1689202132884:library(dbplyr)
+1689202135052:library(sparklyr)
+1689202140478:library(dbplyr)
+1689202141560:library(dplyr)
+1689202143580:library(ggplot2)
+1689202145645:library(sparklyr)
+1689202190586:install.packages("dbplyr", repos = "https://cran.rstudio.com")
+1689202194528:install.packages("dbplyr", repos = "https://cran.rstudio.com")
+1689202218749:install.packages("sparklyr", repos = "https://cran.rstudio.com")
+1689202249958:library(tidyr)
+1689202250681:library(sparklyr)
+1689202255129:library(dbplyr)
+1689202256478:library(sparklyr)
+1689202259346:library(dplyr)
+1689202262207:library(ggplot2)
+1689202277767:library(dplyr)
+1689202283422:library(tidyr)
+1689202283891:library(dbplyr)
+1689202284347:library(sparklyr)
+1689202284782:library(dplyr)
+1689202285540:library(ggplot2)
+1689202289728:# Connect
+1689202289731:sc <- sparklyr::spark_connect(master = "local")
+1689202300189:datasetPath <- "/data/train.csv"
+1689202300223:trainSet <- spark_read_csv(sc, name = "train", path = datasetPath, header = TRUE, infer_schema = TRUE)
+1689202303777:trainSet <- na.omit(trainSet)
+1689202304555:datasetPath <- "/data/test.csv"
+1689202304556:testSet <- spark_read_csv(sc, name = "test", path = datasetPath, header = TRUE, infer_schema = TRUE)
+1689202305634:testSet <- na.omit(testSet)
+1689202306122:# Select columns:
+1689202306123:trainFiltered <- trainSet %>% select(Gender, Age, Type_of_Travel, Flight_Distance, Inflight_service, satisfaction)
+1689202306144:trainFiltered <- trainFiltered %>% mutate(satisfaction = switch(satisfaction,
+1689202306144:"satisfied"=1,
+1689202306144:"neutral or dissatisfied"=0))
+1689202306273:testFiltered <- testSet %>% select(Gender, Age, Type_of_Travel, Flight_Distance, Inflight_service, satisfaction)
+1689202306289:testFiltered <- testFiltered %>% mutate(satisfaction = switch(satisfaction,
+1689202306289:"satisfied"=1,
+1689202306290:"neutral or dissatisfied"=0))
+1689202307665:head(testFiltered)
+1689202309737:#1
+1689202309740:formula <- satisfaction ~ Gender + Age + Type_of_Travel + Flight_Distance + Inflight_service
+1689202311427:samples <- c(1:4)
+1689202312283:max_iterations <- samples * 4
+1689202312512:weighted_precision <- samples
+1689202312723:weighted_recall <- samples
+1689202312926:weighted_f_measure <- samples
+1689202313120:area_under_roc <- samples
+1689202313509:accuracy <- samples
+1689202314464:for(i in samples){
+1689202314467:model <- ml_logistic_regression(trainFiltered,
+1689202314467:formula,
+1689202314468:max_iter = max_iterations[i],
+1689202314469:family = "binomial")
+1689202314469:evaluation <- ml_evaluate(model, dataset=testFiltered)
+1689202314470:weighted_precision[i] <- evaluation$weighted_precision()
+1689202314471:weighted_recall[i] <- evaluation$weighted_recall()
+1689202314471:weighted_f_measure[i] <- evaluation$weighted_f_measure()
+1689202314472:area_under_roc[i] <- evaluation$area_under_roc()
+1689202314473:accuracy[i] <- evaluation$accuracy()
+1689202314474:}
+1689202331087:df <- data.frame(i=max_iterations,
+1689202331090:wp=weighted_precision,
+1689202331091:wr=weighted_recall,
+1689202331091:wf=weighted_f_measure,
+1689202331092:aur=area_under_roc,
+1689202331092:a=accuracy)
+1689202332425:print(df)
+1689202335971:p1 <- df %>%
+1689202335998:ggplot(aes(i, wp, color=wp)) +
+1689202335999:geom_line(size=2) +
+1689202335999:scale_x_continuous(breaks=max_iterations) +
+1689202336000:scale_y_continuous(breaks=weighted_precision) +
+1689202336000:theme(text = element_text(size = 16)) +
+1689202336000:labs(x="Iterations", y="Precision")
+1689202346452:p2 <- df %>%
+1689202346453:ggplot(aes(i, wr, color=wr)) +
+1689202346453:geom_line(size=2) +
+1689202346454:scale_x_continuous(breaks=max_iterations) +
+1689202346455:scale_y_continuous(breaks=weighted_recall) +
+1689202346455:theme(text = element_text(size = 16)) +
+1689202346456:labs(x="Iterations", y="Recall")
+1689202347192:p3 <- df %>%
+1689202347195:ggplot(aes(i, a, color=a)) +
+1689202347195:geom_line(size=2) +
+1689202347196:scale_x_continuous(breaks=max_iterations) +
+1689202347196:scale_y_continuous(breaks=accuracy) +
+1689202347197:theme(text = element_text(size = 16)) +
+1689202347198:labs(x="Iterations", y="Accuracy")
+1689202347761:p4 <- df %>%
+1689202347764:ggplot(aes(i, aur, color=aur)) +
+1689202347764:geom_line(size=2) +
+1689202347765:scale_x_continuous(breaks=max_iterations) +
+1689202347765:scale_y_continuous(breaks=area_under_roc) +
+1689202347766:theme(text = element_text(size = 16)) +
+1689202347767:labs(x="Iterations", y="Area under ROC")
+1689202348340:p5 <- df %>%
+1689202348343:ggplot(aes(i, wf, color=wf)) +
+1689202348344:geom_line(size=2) +
+1689202348344:scale_x_continuous(breaks=max_iterations) +
+1689202348345:scale_y_continuous(breaks=weighted_f_measure) +
+1689202348345:theme(text = element_text(size = 16)) +
+1689202348346:labs(x="Iterations", y="F measure")
+1689202349032:p1
+1689202350527:p2
+1689202351402:p3
+1689202352158:p4
+1689202354581:p5
+1689202357874:p5
+1689202359448:p4
+1689202361923:#2
+1689202361926:bayes_model <- ml_naive_bayes(trainFiltered, formula)
+1689202366537:svc_model <- ml_linear_svc(trainFiltered, formula)
+1689202403080:dt_model <- ml_decision_tree_classifier(trainFiltered, formula)
+1689202405591:bayes_accuracy <- ml_evaluate(bayes_model, dataset=testFiltered)$Accuracy
+1689202408263:svc_accuracy <- ml_evaluate(svc_model, dataset=testFiltered)$Accuracy
+1689202409450:dt_accuracy <- ml_evaluate(dt_model, dataset=testFiltered)$Accuracy
+1689202416821:bayes_k_cross_fold_accuracy <- k_cross_fold_validation(water.dataset.filtered, ml_naive_bayes, formula)
+1689202431705:k_cross_fold_validation <- function(dataset, model, formula){
+1689202431708:dataset <- dataset %>%
+1689202431708:sdf_random_split(seed=1,
+1689202431708:s1=0.25,
+1689202431709:s2=0.25,
+1689202431709:s3=0.25,
+1689202431709:s4=0.25)
+1689202431709:training <- list(
+1689202431709:s1 = sdf_bind_rows(dataset$s2, dataset$s3, dataset$s4),
+1689202431710:s2 = sdf_bind_rows(dataset$s1, dataset$s3, dataset$s4),
+1689202431710:s3 = sdf_bind_rows(dataset$s1, dataset$s2, dataset$s4),
+1689202431710:s4 = sdf_bind_rows(dataset$s1, dataset$s2, dataset$s3)
+1689202431710:)
+1689202431711:trained = list(s1=model(training$s1, formula),
+1689202431711:s2=model(training$s2, formula),
+1689202431711:s3=model(training$s3, formula),
+1689202431711:s4=model(training$s4, formula)
+1689202431712:)
+1689202431712:model.accuracy <- (ml_evaluate(trained$s1, dataset$s1)$Accuracy +
+1689202431713:ml_evaluate(trained$s2, dataset$s2)$Accuracy +
+1689202431713:ml_evaluate(trained$s3, dataset$s3)$Accuracy +
+1689202431714:ml_evaluate(trained$s4, dataset$s4)$Accuracy
+1689202431714:) / 4
+1689202431715:}
+1689202433555:bayes_k_cross_fold_accuracy <- k_cross_fold_validation(water.dataset.filtered, ml_naive_bayes, formula)
+1689202461816:bayes_k_cross_fold_accuracy <- k_cross_fold_validation(trainFiltered, ml_naive_bayes, formula)
+1689202478359:svc_k_cross_fold_accuracy <- k_cross_fold_validation(trainFiltered, ml_linear_svc, formula)
+1689202757580:dt_k_cross_fold_accuracy <- k_cross_fold_validation(trainFiltered, ml_decision_tree_classifier, formula)
+1689202813874:knitr::kable(array(c("Bayes-ov model", "Mašina potpornih vektora", "Stablo odlučivanja",
+1689202813877:bayes_accuracy, svc_accuracy, dt_accuracy,
+1689202813877:bayes_k_cross_fold_accuracy, svc_k_cross_fold_accuracy, dt_k_cross_fold_accuracy),
+1689202813877:dim = c(3, 3)),
+1689202813878:col.names = c("Model", "Preciznost korišćenjem validacionog skupa", "Preciznost korišćenjem 4-strukog ukrštanja"),
+1689202813878:label = "Poređenje tačnosti različitih klasifikacionih modela u odnosu na načine validacije",
+1689202813879:align = "ccc",
+1689202813879:format = "html"
+1689202813879:) %>%
+1689202813880:kableExtra::kable_styling(bootstrap_options = "bordered", full_width = F, font_size = 16)
+1689203024236:df <- data.frame(bayes_accuracy,
+1689203024239:bayes_k_cross_fold_accuracy,
+1689203024239:svc_accuracy,
+1689203024240:svc_k_cross_fold_accuracy,
+1689203024240:dt_accuracy,
+1689203024241:dt_k_cross_fold_accuracy)
+1689203025718:print(df)
+1689203111805:df <- data.frame(bayes_accuracy=bayes_accuracy,
+1689203111808:bayes_k_cross_fold_accuracy=bayes_k_cross_fold_accuracy,
+1689203111808:svc_accuracy=svc_accuracy,
+1689203111808:svc_k_cross_fold_accuracy=svc_k_cross_fold_accuracy,
+1689203111809:dt_accuracy=dt_accuracy,
+1689203111809:dt_k_cross_fold_accuracy=dt_k_cross_fold_accuracy)
+1689203114411:print(df)
+1689203432951:bayes_k_cross_fold_accuracy <- k_cross_fold_validation(trainFiltered, ml_naive_bayes, formula)
+1689203596201:df <- data.frame(bayes_accuracy=bayes_accuracy,
+1689203596204:bayes_k_cross_fold_accuracy=bayes_k_cross_fold_accuracy,
+1689203596204:svc_accuracy=svc_accuracy,
+1689203596205:svc_k_cross_fold_accuracy=svc_k_cross_fold_accuracy,
+1689203596205:dt_accuracy=dt_accuracy,
+1689203596205:dt_k_cross_fold_accuracy=dt_k_cross_fold_accuracy)
+1689203597657:print(df)
