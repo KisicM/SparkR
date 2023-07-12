@@ -1,0 +1,26 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1689199582032.000,
+    "dirty" : false,
+    "encoding" : "",
+    "folds" : "",
+    "hash" : "0",
+    "id" : "B13EF1FE",
+    "lastKnownWriteTime" : 94812539953768,
+    "last_content_update" : 1689199582032,
+    "path" : null,
+    "project_path" : null,
+    "properties" : {
+        "id" : "89d972f99aea4c6f8aa72bae769f19df",
+        "name" : "bayes_model",
+        "title" : "bayes_model"
+    },
+    "read_only" : false,
+    "read_only_alternatives" : [
+    ],
+    "relative_order" : 3,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "object_explorer"
+}

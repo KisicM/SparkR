@@ -1184,3 +1184,735 @@
 1689190048938:p3
 1689190050271:p4
 1689190060758:p3
+1689195851393:install.packages("gridExtra", repos="https://cran.rstudio.com/")
+1689195860014:library(sparklyr)
+1689195860554:library(dplyr)
+1689195860941:library(ggplot2)
+1689195861646:library(cowplot)
+1689195867084:# Install
+1689195867087:spark_install()
+1689195869522:# Connect
+1689195869525:sc <- sparklyr::spark_connect(master = "local")
+1689195884408:datasetPath <- "/data/train.csv"
+1689195885203:trainSet <- spark_read_csv(sc, name = "train", path = datasetPath, header = TRUE, infer_schema = TRUE)
+1689195890091:trainSet <- na.omit(trainSet)
+1689195890781:datasetPath <- "/data/test.csv"
+1689195890782:testSet <- spark_read_csv(sc, name = "test", path = datasetPath, header = TRUE, infer_schema = TRUE)
+1689195892182:testSet <- na.omit(testSet)
+1689195892493:glimpse(trainSet)
+1689195893467:head(trainSet)
+1689195898182:# Select columns:
+1689195898185:trainFiltered <- trainSet %>% select(Gender, Age, Type_of_Travel, Flight_Distance, Inflight_service, satisfaction)
+1689195899358:head(trainFiltered)
+1689195901894:trainFiltered <- trainFiltered %>% mutate(satisfaction = switch(satisfaction,
+1689195901897:"satisfied"=1,
+1689195901897:"neutral or dissatisfied"=0))
+1689195903711:testFiltered <- testSet %>% select(Gender, Age, Type_of_Travel, Flight_Distance, Inflight_service, satisfaction)
+1689195907083:head(testFiltered)
+1689195909089:testFiltered <- testFiltered %>% mutate(satisfaction = switch(satisfaction,
+1689195909092:"satisfied"=1,
+1689195909093:"neutral or dissatisfied"=0))
+1689195912886:head(testFiltered)
+1689195916374:formula <- satisfaction ~ Gender + Age + Type_of_Travel + Flight_Distance + Inflight_service
+1689195917274:samples <- c(1:3)
+1689195939276:formula <- satisfaction ~ Gender + Age + Type_of_Travel + Flight_Distance + Inflight_service
+1689195940167:samples <- c(1:1)
+1689195940548:max_iterations <- samples * 5
+1689195940894:log.reg.weighted.precision <- samples
+1689195941167:log.reg.weighted.recall <- samples
+1689195941440:log.reg.weighted.f.measure <- samples
+1689195941757:log.reg.area.under.roc <- samples
+1689195942380:log.reg.accuracy <- samples
+1689195944527:for(i in samples){
+1689195944530:logreg <- ml_logistic_regression(trainFiltered,
+1689195944530:formula,
+1689195944531:max_iter = max_iterations[i],
+1689195944531:family = "binomial")
+1689195944531:evaluation <- ml_evaluate(logreg, dataset=testFiltered)
+1689195944532:log.reg.weighted.precision[i] <- evaluation$weighted_precision()
+1689195944532:log.reg.weighted.recall[i] <- evaluation$weighted_recall()
+1689195944533:log.reg.weighted.f.measure[i] <- evaluation$weighted_f_measure()
+1689195944533:log.reg.area.under.roc[i] <- evaluation$area_under_roc()
+1689195944533:log.reg.accuracy[i] <- evaluation$accuracy()
+1689195944534:}
+1689195955742:df <- data.frame(i=max_iterations,
+1689195955769:wp=log.reg.weighted.precision,
+1689195955770:wr=log.reg.weighted.recall,
+1689195955770:wf=log.reg.weighted.f.measure,
+1689195955771:aur=log.reg.area.under.roc,
+1689195955772:a=log.reg.accuracy)
+1689195957523:p1 <- df %>%
+1689195957526:ggplot(aes(i, wp, color=wp)) +
+1689195957526:geom_line(size=2) +
+1689195957527:scale_x_continuous(breaks=max_iterations) +
+1689195957528:scale_y_continuous(breaks=log.reg.weighted.precision) +
+1689195957528:theme(text = element_text(size = 16)) +
+1689195957529:labs(x="Maksimalni broj iteracija", y="Preciznost", title = "a) Zavisnost preciznosti od maksimalnog broja iteracija")
+1689195959005:p2 <- df %>%
+1689195959008:ggplot(aes(i, wr, color=wr)) +
+1689195959009:geom_line(size=2) +
+1689195959009:scale_x_continuous(breaks=max_iterations) +
+1689195959010:scale_y_continuous(breaks=log.reg.weighted.recall) +
+1689195959010:theme(text = element_text(size = 16)) +
+1689195959011:labs(x="Maksimalni broj iteracija", y="Osetljivost", title = "b) Zavisnost osetljivosti od maksimalnog broja iteracija")
+1689195959679:p3 <- df %>%
+1689195959682:ggplot(aes(i, a, color=wf)) +
+1689195959682:geom_line(size=2) +
+1689195959683:scale_x_continuous(breaks=max_iterations) +
+1689195959684:scale_y_continuous(breaks=log.reg.accuracy) +
+1689195959684:theme(text = element_text(size = 16)) +
+1689195959685:labs(x="Maksimalni broj iteracija", y="F1", title = "c) Zavisnost F1 mere od maksimalnog broja iteracija")
+1689195960199:p4 <- df %>%
+1689195960202:ggplot(aes(i, aur, color=aur)) +
+1689195960203:geom_line(size=2) +
+1689195960203:scale_x_continuous(breaks=max_iterations) +
+1689195960204:scale_y_continuous(breaks=log.reg.area.under.roc) +
+1689195960204:theme(text = element_text(size = 16)) +
+1689195960205:labs(x="Mkaismalni broj iteracija", y="Površina ispod ROC krive", title = "d) Zavisnost površine ispod ROC krive od maksimalnog broja iteracija")
+1689195961703:p1
+1689195988586:formula <- satisfaction ~ Gender + Age + Type_of_Travel + Flight_Distance + Inflight_service
+1689195989066:samples <- c(1:5)
+1689195989385:max_iterations <- samples * 1
+1689195989596:log.reg.weighted.precision <- samples
+1689195989807:log.reg.weighted.recall <- samples
+1689195989984:log.reg.weighted.f.measure <- samples
+1689195990346:log.reg.area.under.roc <- samples
+1689195990952:log.reg.accuracy <- samples
+1689195991453:for(i in samples){
+1689195991456:logreg <- ml_logistic_regression(trainFiltered,
+1689195991456:formula,
+1689195991457:max_iter = max_iterations[i],
+1689195991458:family = "binomial")
+1689195991459:evaluation <- ml_evaluate(logreg, dataset=testFiltered)
+1689195991459:log.reg.weighted.precision[i] <- evaluation$weighted_precision()
+1689195991460:log.reg.weighted.recall[i] <- evaluation$weighted_recall()
+1689195991461:log.reg.weighted.f.measure[i] <- evaluation$weighted_f_measure()
+1689195991462:log.reg.area.under.roc[i] <- evaluation$area_under_roc()
+1689195991463:log.reg.accuracy[i] <- evaluation$accuracy()
+1689195991464:}
+1689196010250:df <- data.frame(i=max_iterations,
+1689196010253:wp=log.reg.weighted.precision,
+1689196010253:wr=log.reg.weighted.recall,
+1689196010253:wf=log.reg.weighted.f.measure,
+1689196010254:aur=log.reg.area.under.roc,
+1689196010254:a=log.reg.accuracy)
+1689196011115:p1 <- df %>%
+1689196011117:ggplot(aes(i, wp, color=wp)) +
+1689196011118:geom_line(size=2) +
+1689196011118:scale_x_continuous(breaks=max_iterations) +
+1689196011119:scale_y_continuous(breaks=log.reg.weighted.precision) +
+1689196011119:theme(text = element_text(size = 16)) +
+1689196011119:labs(x="Maksimalni broj iteracija", y="Preciznost", title = "a) Zavisnost preciznosti od maksimalnog broja iteracija")
+1689196011721:p2 <- df %>%
+1689196011724:ggplot(aes(i, wr, color=wr)) +
+1689196011724:geom_line(size=2) +
+1689196011725:scale_x_continuous(breaks=max_iterations) +
+1689196011725:scale_y_continuous(breaks=log.reg.weighted.recall) +
+1689196011726:theme(text = element_text(size = 16)) +
+1689196011727:labs(x="Maksimalni broj iteracija", y="Osetljivost", title = "b) Zavisnost osetljivosti od maksimalnog broja iteracija")
+1689196012218:p3 <- df %>%
+1689196012221:ggplot(aes(i, a, color=wf)) +
+1689196012222:geom_line(size=2) +
+1689196012223:scale_x_continuous(breaks=max_iterations) +
+1689196012223:scale_y_continuous(breaks=log.reg.accuracy) +
+1689196012224:theme(text = element_text(size = 16)) +
+1689196012224:labs(x="Maksimalni broj iteracija", y="F1", title = "c) Zavisnost F1 mere od maksimalnog broja iteracija")
+1689196012764:p4 <- df %>%
+1689196012767:ggplot(aes(i, aur, color=aur)) +
+1689196012767:geom_line(size=2) +
+1689196012768:scale_x_continuous(breaks=max_iterations) +
+1689196012768:scale_y_continuous(breaks=log.reg.area.under.roc) +
+1689196012769:theme(text = element_text(size = 16)) +
+1689196012770:labs(x="Mkaismalni broj iteracija", y="Površina ispod ROC krive", title = "d) Zavisnost površine ispod ROC krive od maksimalnog broja iteracija")
+1689196014619:p1
+1689196025310:p2
+1689196027475:p3
+1689196029307:p4
+1689196052186:formula <- satisfaction ~ Gender + Age + Type_of_Travel + Flight_Distance + Inflight_service
+1689196053082:samples <- c(1:5)
+1689196053531:max_iterations <- samples * 5
+1689196053851:log.reg.weighted.precision <- samples
+1689196054053:log.reg.weighted.recall <- samples
+1689196054264:log.reg.weighted.f.measure <- samples
+1689196054591:log.reg.area.under.roc <- samples
+1689196055205:log.reg.accuracy <- samples
+1689196055993:for(i in samples){
+1689196055996:logreg <- ml_logistic_regression(trainFiltered,
+1689196055997:formula,
+1689196055997:max_iter = max_iterations[i],
+1689196055998:family = "binomial")
+1689196055998:evaluation <- ml_evaluate(logreg, dataset=testFiltered)
+1689196055999:log.reg.weighted.precision[i] <- evaluation$weighted_precision()
+1689196056000:log.reg.weighted.recall[i] <- evaluation$weighted_recall()
+1689196056000:log.reg.weighted.f.measure[i] <- evaluation$weighted_f_measure()
+1689196056001:log.reg.area.under.roc[i] <- evaluation$area_under_roc()
+1689196056001:log.reg.accuracy[i] <- evaluation$accuracy()
+1689196056002:}
+1689196078736:df <- data.frame(i=max_iterations,
+1689196078739:wp=log.reg.weighted.precision,
+1689196078740:wr=log.reg.weighted.recall,
+1689196078740:wf=log.reg.weighted.f.measure,
+1689196078741:aur=log.reg.area.under.roc,
+1689196078742:a=log.reg.accuracy)
+1689196080395:p1 <- df %>%
+1689196080399:ggplot(aes(i, wp, color=wp)) +
+1689196080399:geom_line(size=2) +
+1689196080400:scale_x_continuous(breaks=max_iterations) +
+1689196080401:scale_y_continuous(breaks=log.reg.weighted.precision) +
+1689196080402:theme(text = element_text(size = 16)) +
+1689196080402:labs(x="Maksimalni broj iteracija", y="Preciznost", title = "a) Zavisnost preciznosti od maksimalnog broja iteracija")
+1689196081000:p2 <- df %>%
+1689196081001:ggplot(aes(i, wr, color=wr)) +
+1689196081001:geom_line(size=2) +
+1689196081002:scale_x_continuous(breaks=max_iterations) +
+1689196081003:scale_y_continuous(breaks=log.reg.weighted.recall) +
+1689196081003:theme(text = element_text(size = 16)) +
+1689196081004:labs(x="Maksimalni broj iteracija", y="Osetljivost", title = "b) Zavisnost osetljivosti od maksimalnog broja iteracija")
+1689196081919:p3 <- df %>%
+1689196081922:ggplot(aes(i, a, color=wf)) +
+1689196081923:geom_line(size=2) +
+1689196081923:scale_x_continuous(breaks=max_iterations) +
+1689196081924:scale_y_continuous(breaks=log.reg.accuracy) +
+1689196081925:theme(text = element_text(size = 16)) +
+1689196081925:labs(x="Maksimalni broj iteracija", y="F1", title = "c) Zavisnost F1 mere od maksimalnog broja iteracija")
+1689196082941:p4 <- df %>%
+1689196082942:ggplot(aes(i, aur, color=aur)) +
+1689196082943:geom_line(size=2) +
+1689196082944:scale_x_continuous(breaks=max_iterations) +
+1689196082944:scale_y_continuous(breaks=log.reg.area.under.roc) +
+1689196082945:theme(text = element_text(size = 16)) +
+1689196082946:labs(x="Mkaismalni broj iteracija", y="Površina ispod ROC krive", title = "d) Zavisnost površine ispod ROC krive od maksimalnog broja iteracija")
+1689196084528:p1
+1689196088250:p2
+1689196093552:p1
+1689196095026:p2
+1689196096203:p3
+1689196098260:p4
+1689197062153:# Select columns:
+1689197062153:trainFiltered <- trainSet %>% select(Gender, Age, Type_of_Travel, Flight_Distance, Inflight_service, satisfaction)
+1689197064736:head(trainFiltered)
+1689197066533:trainFiltered <- trainFiltered %>% mutate(satisfaction = switch(satisfaction,
+1689197066536:"satisfied"=1,
+1689197066537:"neutral or dissatisfied"=0))
+1689197067448:testFiltered <- testSet %>% select(Gender, Age, Type_of_Travel, Flight_Distance, Inflight_service, satisfaction)
+1689197067908:head(testFiltered)
+1689197068553:testFiltered <- testFiltered %>% mutate(satisfaction = switch(satisfaction,
+1689197068556:"satisfied"=1,
+1689197068556:"neutral or dissatisfied"=0))
+1689197070578:head(testFiltered)
+1689197072769:formula <- satisfaction ~ Gender + Age + Type_of_Travel + Flight_Distance + Inflight_service
+1689197074227:samples <- c(1:5)
+1689197075008:max_iterations <- samples * 5
+1689197075490:weighted_precision <- samples
+1689197075847:weighted_recall <- samples
+1689197076139:weighted_f_measure <- samples
+1689197076496:area_under_roc <- samples
+1689197077113:accuracy <- samples
+1689197078202:for(i in samples){
+1689197078202:model <- ml_logistic_regression(trainFiltered,
+1689197078203:formula,
+1689197078204:max_iter = max_iterations[i],
+1689197078204:family = "binomial")
+1689197078205:evaluation <- ml_evaluate(model, dataset=testFiltered)
+1689197078206:weighted_precision[i] <- evaluation$weighted_precision()
+1689197078206:weighted_recall[i] <- evaluation$weighted_recall()
+1689197078207:weighted_f_measure[i] <- evaluation$weighted_f_measure()
+1689197078207:area_under_roc[i] <- evaluation$area_under_roc()
+1689197078208:accuracy[i] <- evaluation$accuracy()
+1689197078209:}
+1689197102974:df <- data.frame(i=max_iterations,
+1689197102976:wp=weighted_precision,
+1689197102977:wr=weighted_recall,
+1689197102977:wf=weighted_f_measure,
+1689197102978:aur=area_under_roc,
+1689197102978:a=accuracy)
+1689197112353:p1 <- df %>%
+1689197112354:ggplot(aes(i, wp, color=wp)) +
+1689197112355:geom_line(size=2) +
+1689197112355:scale_x_continuous(breaks=max_iterations) +
+1689197112356:scale_y_continuous(breaks=weighted_precision) +
+1689197112357:theme(text = element_text(size = 16)) +
+1689197112357:labs(x="Iterations", y="Precision")
+1689197118804:p2 <- df %>%
+1689197118807:ggplot(aes(i, wr, color=wr)) +
+1689197118807:geom_line(size=2) +
+1689197118808:scale_x_continuous(breaks=max_iterations) +
+1689197118808:scale_y_continuous(breaks=weighted_recall) +
+1689197118809:theme(text = element_text(size = 16)) +
+1689197118810:labs(x="Iterations", y="Recall")
+1689197119348:p3 <- df %>%
+1689197119351:ggplot(aes(i, a, color=a)) +
+1689197119352:geom_line(size=2) +
+1689197119352:scale_x_continuous(breaks=max_iterations) +
+1689197119353:scale_y_continuous(breaks=accuracy) +
+1689197119354:theme(text = element_text(size = 16)) +
+1689197119355:labs(x="Iterations", y="Accuracy")
+1689197119855:p4 <- df %>%
+1689197119858:ggplot(aes(i, aur, color=aur)) +
+1689197119858:geom_line(size=2) +
+1689197119859:scale_x_continuous(breaks=max_iterations) +
+1689197119860:scale_y_continuous(breaks=area_under_roc) +
+1689197119860:theme(text = element_text(size = 16)) +
+1689197119861:labs(x="Iterations", y="Area under ROC")
+1689197120523:p5 <- df %>%
+1689197120526:ggplot(aes(i, wf, color=wf)) +
+1689197120526:geom_line(size=2) +
+1689197120527:scale_x_continuous(breaks=max_iterations) +
+1689197120528:scale_y_continuous(breaks=weighted_f_measure) +
+1689197120528:theme(text = element_text(size = 16)) +
+1689197120529:labs(x="Iterations", y="F measure")
+1689197124499:p1
+1689197128289:p2
+1689197133562:p3
+1689197139339:p4
+1689197146107:p5
+1689197162806:samples <- c(1:2)
+1689197163617:max_iterations <- samples * 5
+1689197163855:weighted_precision <- samples
+1689197164040:weighted_recall <- samples
+1689197164287:weighted_f_measure <- samples
+1689197164544:area_under_roc <- samples
+1689197164853:accuracy <- samples
+1689197165320:for(i in samples){
+1689197165323:model <- ml_logistic_regression(trainFiltered,
+1689197165324:formula,
+1689197165325:max_iter = max_iterations[i],
+1689197165325:family = "binomial")
+1689197165326:evaluation <- ml_evaluate(model, dataset=testFiltered)
+1689197165327:weighted_precision[i] <- evaluation$weighted_precision()
+1689197165327:weighted_recall[i] <- evaluation$weighted_recall()
+1689197165328:weighted_f_measure[i] <- evaluation$weighted_f_measure()
+1689197165329:area_under_roc[i] <- evaluation$area_under_roc()
+1689197165330:accuracy[i] <- evaluation$accuracy()
+1689197165331:}
+1689197174716:df <- data.frame(i=max_iterations,
+1689197174743:wp=weighted_precision,
+1689197174743:wr=weighted_recall,
+1689197174744:wf=weighted_f_measure,
+1689197174745:aur=area_under_roc,
+1689197174746:a=accuracy)
+1689197176606:p1 <- df %>%
+1689197176609:ggplot(aes(i, wp, color=wp)) +
+1689197176609:geom_line(size=2) +
+1689197176610:scale_x_continuous(breaks=max_iterations) +
+1689197176610:scale_y_continuous(breaks=weighted_precision) +
+1689197176611:theme(text = element_text(size = 16)) +
+1689197176611:labs(x="Iterations", y="Precision")
+1689197177081:p2 <- df %>%
+1689197177084:ggplot(aes(i, wr, color=wr)) +
+1689197177085:geom_line(size=2) +
+1689197177085:scale_x_continuous(breaks=max_iterations) +
+1689197177086:scale_y_continuous(breaks=weighted_recall) +
+1689197177087:theme(text = element_text(size = 16)) +
+1689197177087:labs(x="Iterations", y="Recall")
+1689197177450:p3 <- df %>%
+1689197177453:ggplot(aes(i, a, color=a)) +
+1689197177453:geom_line(size=2) +
+1689197177454:scale_x_continuous(breaks=max_iterations) +
+1689197177455:scale_y_continuous(breaks=accuracy) +
+1689197177455:theme(text = element_text(size = 16)) +
+1689197177456:labs(x="Iterations", y="Accuracy")
+1689197177719:p4 <- df %>%
+1689197177722:ggplot(aes(i, aur, color=aur)) +
+1689197177722:geom_line(size=2) +
+1689197177722:scale_x_continuous(breaks=max_iterations) +
+1689197177723:scale_y_continuous(breaks=area_under_roc) +
+1689197177723:theme(text = element_text(size = 16)) +
+1689197177723:labs(x="Iterations", y="Area under ROC")
+1689197178031:p5 <- df %>%
+1689197178033:ggplot(aes(i, wf, color=wf)) +
+1689197178034:geom_line(size=2) +
+1689197178034:scale_x_continuous(breaks=max_iterations) +
+1689197178034:scale_y_continuous(breaks=weighted_f_measure) +
+1689197178035:theme(text = element_text(size = 16)) +
+1689197178035:labs(x="Iterations", y="F measure")
+1689197178902:p1
+1689197182786:p2
+1689197183966:p3
+1689197184787:p4
+1689197185598:p5
+1689197219859:samples <- c(1:3)
+1689197220383:max_iterations <- samples * 5
+1689197220719:weighted_precision <- samples
+1689197220903:weighted_recall <- samples
+1689197221079:weighted_f_measure <- samples
+1689197221353:area_under_roc <- samples
+1689197221646:accuracy <- samples
+1689197222064:for(i in samples){
+1689197222066:model <- ml_logistic_regression(trainFiltered,
+1689197222067:formula,
+1689197222067:max_iter = max_iterations[i],
+1689197222068:family = "binomial")
+1689197222068:evaluation <- ml_evaluate(model, dataset=testFiltered)
+1689197222068:weighted_precision[i] <- evaluation$weighted_precision()
+1689197222069:weighted_recall[i] <- evaluation$weighted_recall()
+1689197222069:weighted_f_measure[i] <- evaluation$weighted_f_measure()
+1689197222069:area_under_roc[i] <- evaluation$area_under_roc()
+1689197222070:accuracy[i] <- evaluation$accuracy()
+1689197222070:}
+1689197233600:df <- data.frame(i=max_iterations,
+1689197233603:wp=weighted_precision,
+1689197233603:wr=weighted_recall,
+1689197233604:wf=weighted_f_measure,
+1689197233604:aur=area_under_roc,
+1689197233605:a=accuracy)
+1689197235452:p1 <- df %>%
+1689197235455:ggplot(aes(i, wp, color=wp)) +
+1689197235456:geom_line(size=2) +
+1689197235456:scale_x_continuous(breaks=max_iterations) +
+1689197235457:scale_y_continuous(breaks=weighted_precision) +
+1689197235458:theme(text = element_text(size = 16)) +
+1689197235458:labs(x="Iterations", y="Precision")
+1689197235825:p2 <- df %>%
+1689197235828:ggplot(aes(i, wr, color=wr)) +
+1689197235829:geom_line(size=2) +
+1689197235829:scale_x_continuous(breaks=max_iterations) +
+1689197235830:scale_y_continuous(breaks=weighted_recall) +
+1689197235831:theme(text = element_text(size = 16)) +
+1689197235831:labs(x="Iterations", y="Recall")
+1689197236290:p3 <- df %>%
+1689197236293:ggplot(aes(i, a, color=a)) +
+1689197236294:geom_line(size=2) +
+1689197236294:scale_x_continuous(breaks=max_iterations) +
+1689197236295:scale_y_continuous(breaks=accuracy) +
+1689197236295:theme(text = element_text(size = 16)) +
+1689197236296:labs(x="Iterations", y="Accuracy")
+1689197236623:p4 <- df %>%
+1689197236627:ggplot(aes(i, aur, color=aur)) +
+1689197236627:geom_line(size=2) +
+1689197236628:scale_x_continuous(breaks=max_iterations) +
+1689197236629:scale_y_continuous(breaks=area_under_roc) +
+1689197236629:theme(text = element_text(size = 16)) +
+1689197236630:labs(x="Iterations", y="Area under ROC")
+1689197237082:p5 <- df %>%
+1689197237085:ggplot(aes(i, wf, color=wf)) +
+1689197237086:geom_line(size=2) +
+1689197237086:scale_x_continuous(breaks=max_iterations) +
+1689197237087:scale_y_continuous(breaks=weighted_f_measure) +
+1689197237087:theme(text = element_text(size = 16)) +
+1689197237088:labs(x="Iterations", y="F measure")
+1689197238647:p1
+1689197241690:p2
+1689197243091:p3
+1689197244524:p4
+1689197247405:p5
+1689197252565:p4
+1689197278671:samples <- c(1:3)
+1689197279062:max_iterations <- samples * 3
+1689197279336:weighted_precision <- samples
+1689197279564:weighted_recall <- samples
+1689197279740:weighted_f_measure <- samples
+1689197279941:area_under_roc <- samples
+1689197280324:accuracy <- samples
+1689197280744:for(i in samples){
+1689197280744:model <- ml_logistic_regression(trainFiltered,
+1689197280745:formula,
+1689197280745:max_iter = max_iterations[i],
+1689197280746:family = "binomial")
+1689197280746:evaluation <- ml_evaluate(model, dataset=testFiltered)
+1689197280746:weighted_precision[i] <- evaluation$weighted_precision()
+1689197280747:weighted_recall[i] <- evaluation$weighted_recall()
+1689197280747:weighted_f_measure[i] <- evaluation$weighted_f_measure()
+1689197280748:area_under_roc[i] <- evaluation$area_under_roc()
+1689197280748:accuracy[i] <- evaluation$accuracy()
+1689197280748:}
+1689197292100:df <- data.frame(i=max_iterations,
+1689197292102:wp=weighted_precision,
+1689197292103:wr=weighted_recall,
+1689197292103:wf=weighted_f_measure,
+1689197292104:aur=area_under_roc,
+1689197292104:a=accuracy)
+1689197293516:p1 <- df %>%
+1689197293519:ggplot(aes(i, wp, color=wp)) +
+1689197293520:geom_line(size=2) +
+1689197293520:scale_x_continuous(breaks=max_iterations) +
+1689197293521:scale_y_continuous(breaks=weighted_precision) +
+1689197293521:theme(text = element_text(size = 16)) +
+1689197293522:labs(x="Iterations", y="Precision")
+1689197293789:p2 <- df %>%
+1689197293792:ggplot(aes(i, wr, color=wr)) +
+1689197293792:geom_line(size=2) +
+1689197293793:scale_x_continuous(breaks=max_iterations) +
+1689197293794:scale_y_continuous(breaks=weighted_recall) +
+1689197293794:theme(text = element_text(size = 16)) +
+1689197293795:labs(x="Iterations", y="Recall")
+1689197294098:p3 <- df %>%
+1689197294100:ggplot(aes(i, a, color=a)) +
+1689197294101:geom_line(size=2) +
+1689197294102:scale_x_continuous(breaks=max_iterations) +
+1689197294102:scale_y_continuous(breaks=accuracy) +
+1689197294103:theme(text = element_text(size = 16)) +
+1689197294103:labs(x="Iterations", y="Accuracy")
+1689197294345:p4 <- df %>%
+1689197294348:ggplot(aes(i, aur, color=aur)) +
+1689197294348:geom_line(size=2) +
+1689197294349:scale_x_continuous(breaks=max_iterations) +
+1689197294349:scale_y_continuous(breaks=area_under_roc) +
+1689197294350:theme(text = element_text(size = 16)) +
+1689197294350:labs(x="Iterations", y="Area under ROC")
+1689197294771:p5 <- df %>%
+1689197294774:ggplot(aes(i, wf, color=wf)) +
+1689197294774:geom_line(size=2) +
+1689197294775:scale_x_continuous(breaks=max_iterations) +
+1689197294776:scale_y_continuous(breaks=weighted_f_measure) +
+1689197294776:theme(text = element_text(size = 16)) +
+1689197294777:labs(x="Iterations", y="F measure")
+1689197295739:p1
+1689197299077:p2
+1689197300136:p3
+1689197301241:p4
+1689197303011:p5
+1689197326675:samples <- c(1:3)
+1689197327048:max_iterations <- samples * 4
+1689197327427:weighted_precision <- samples
+1689197327629:weighted_recall <- samples
+1689197327831:weighted_f_measure <- samples
+1689197328069:area_under_roc <- samples
+1689197328450:accuracy <- samples
+1689197329138:for(i in samples){
+1689197329141:model <- ml_logistic_regression(trainFiltered,
+1689197329142:formula,
+1689197329142:max_iter = max_iterations[i],
+1689197329143:family = "binomial")
+1689197329144:evaluation <- ml_evaluate(model, dataset=testFiltered)
+1689197329144:weighted_precision[i] <- evaluation$weighted_precision()
+1689197329145:weighted_recall[i] <- evaluation$weighted_recall()
+1689197329146:weighted_f_measure[i] <- evaluation$weighted_f_measure()
+1689197329147:area_under_roc[i] <- evaluation$area_under_roc()
+1689197329147:accuracy[i] <- evaluation$accuracy()
+1689197329148:}
+1689197341322:df <- data.frame(i=max_iterations,
+1689197341325:wp=weighted_precision,
+1689197341326:wr=weighted_recall,
+1689197341327:wf=weighted_f_measure,
+1689197341327:aur=area_under_roc,
+1689197341328:a=accuracy)
+1689197342966:p1 <- df %>%
+1689197342969:ggplot(aes(i, wp, color=wp)) +
+1689197342969:geom_line(size=2) +
+1689197342970:scale_x_continuous(breaks=max_iterations) +
+1689197342970:scale_y_continuous(breaks=weighted_precision) +
+1689197342971:theme(text = element_text(size = 16)) +
+1689197342972:labs(x="Iterations", y="Precision")
+1689197343758:p2 <- df %>%
+1689197343761:ggplot(aes(i, wr, color=wr)) +
+1689197343762:geom_line(size=2) +
+1689197343762:scale_x_continuous(breaks=max_iterations) +
+1689197343763:scale_y_continuous(breaks=weighted_recall) +
+1689197343763:theme(text = element_text(size = 16)) +
+1689197343764:labs(x="Iterations", y="Recall")
+1689197344105:p3 <- df %>%
+1689197344108:ggplot(aes(i, a, color=a)) +
+1689197344108:geom_line(size=2) +
+1689197344109:scale_x_continuous(breaks=max_iterations) +
+1689197344110:scale_y_continuous(breaks=accuracy) +
+1689197344111:theme(text = element_text(size = 16)) +
+1689197344112:labs(x="Iterations", y="Accuracy")
+1689197344448:p4 <- df %>%
+1689197344451:ggplot(aes(i, aur, color=aur)) +
+1689197344452:geom_line(size=2) +
+1689197344453:scale_x_continuous(breaks=max_iterations) +
+1689197344453:scale_y_continuous(breaks=area_under_roc) +
+1689197344454:theme(text = element_text(size = 16)) +
+1689197344455:labs(x="Iterations", y="Area under ROC")
+1689197344830:p5 <- df %>%
+1689197344833:ggplot(aes(i, wf, color=wf)) +
+1689197344834:geom_line(size=2) +
+1689197344834:scale_x_continuous(breaks=max_iterations) +
+1689197344835:scale_y_continuous(breaks=weighted_f_measure) +
+1689197344836:theme(text = element_text(size = 16)) +
+1689197344837:labs(x="Iterations", y="F measure")
+1689197345762:p1
+1689197349349:p2
+1689197351164:p3
+1689197352566:p4
+1689197360876:p5
+1689197366145:p3
+1689197370354:p2
+1689197451564:head(df)
+1689197459756:print(df)
+1689198224880:formula <- satisfaction ~ Gender + Age + Type_of_Travel + Flight_Distance + Inflight_service
+1689198225199:samples <- c(1:4)
+1689198225436:max_iterations <- samples * 4
+1689198225621:weighted_precision <- samples
+1689198225806:weighted_recall <- samples
+1689198225979:weighted_f_measure <- samples
+1689198226334:area_under_roc <- samples
+1689198226691:accuracy <- samples
+1689198227137:for(i in samples){
+1689198227140:model <- ml_logistic_regression(trainFiltered,
+1689198227141:formula,
+1689198227141:max_iter = max_iterations[i],
+1689198227142:family = "binomial")
+1689198227143:evaluation <- ml_evaluate(model, dataset=testFiltered)
+1689198227144:weighted_precision[i] <- evaluation$weighted_precision()
+1689198227144:weighted_recall[i] <- evaluation$weighted_recall()
+1689198227145:weighted_f_measure[i] <- evaluation$weighted_f_measure()
+1689198227146:area_under_roc[i] <- evaluation$area_under_roc()
+1689198227147:accuracy[i] <- evaluation$accuracy()
+1689198227148:}
+1689198241051:df <- data.frame(i=max_iterations,
+1689198241054:wp=weighted_precision,
+1689198241055:wr=weighted_recall,
+1689198241055:wf=weighted_f_measure,
+1689198241056:aur=area_under_roc,
+1689198241056:a=accuracy)
+1689198241933:print(df)
+1689198247603:p1 <- df %>%
+1689198247606:ggplot(aes(i, wp, color=wp)) +
+1689198247607:geom_line(size=2) +
+1689198247607:scale_x_continuous(breaks=max_iterations) +
+1689198247608:scale_y_continuous(breaks=weighted_precision) +
+1689198247609:theme(text = element_text(size = 16)) +
+1689198247609:labs(x="Iterations", y="Precision")
+1689198247956:p2 <- df %>%
+1689198247958:ggplot(aes(i, wr, color=wr)) +
+1689198247959:geom_line(size=2) +
+1689198247960:scale_x_continuous(breaks=max_iterations) +
+1689198247960:scale_y_continuous(breaks=weighted_recall) +
+1689198247961:theme(text = element_text(size = 16)) +
+1689198247961:labs(x="Iterations", y="Recall")
+1689198248312:p3 <- df %>%
+1689198248315:ggplot(aes(i, a, color=a)) +
+1689198248316:geom_line(size=2) +
+1689198248316:scale_x_continuous(breaks=max_iterations) +
+1689198248317:scale_y_continuous(breaks=accuracy) +
+1689198248317:theme(text = element_text(size = 16)) +
+1689198248318:labs(x="Iterations", y="Accuracy")
+1689198248694:p4 <- df %>%
+1689198248697:ggplot(aes(i, aur, color=aur)) +
+1689198248698:geom_line(size=2) +
+1689198248698:scale_x_continuous(breaks=max_iterations) +
+1689198248699:scale_y_continuous(breaks=area_under_roc) +
+1689198248699:theme(text = element_text(size = 16)) +
+1689198248700:labs(x="Iterations", y="Area under ROC")
+1689198249144:p5 <- df %>%
+1689198249146:ggplot(aes(i, wf, color=wf)) +
+1689198249147:geom_line(size=2) +
+1689198249148:scale_x_continuous(breaks=max_iterations) +
+1689198249148:scale_y_continuous(breaks=weighted_f_measure) +
+1689198249149:theme(text = element_text(size = 16)) +
+1689198249150:labs(x="Iterations", y="F measure")
+1689198250135:p1
+1689198252408:p2
+1689198254151:p3
+1689198255581:p4
+1689198257065:p5
+1689199434103:#2
+1689199434106:bayes_model <- trainFiltered %>%
+1689199434106:ml_naive_bayes(formula)
+1689199437200:svc_model <- trainFiltered %>%
+1689199437203:ml_linear_svc(formula)
+1689199473567:dt_model <- trainFiltered %>%
+1689199473570:ml_decision_tree_classifier(formula)
+1689199484235:bayes_accuracy <- ml_evaluate(bayes_model, testFiltered)$Accuracy
+1689199484749:svc_accuracy <- ml_evaluate(svc_model, testFiltered)$Accuracy
+1689199553652:bayes_accuracy <- ml_evaluate(bayes_model, dataset=testFiltered)$Accuracy
+1689199581960:View(bayes_model)
+1689199760029:# Select columns:
+1689199760032:trainFiltered <- trainSet %>% select(Gender, Age, Type_of_Travel, Flight_Distance, Inflight_service, satisfaction)
+1689199760993:head(trainFiltered)
+1689199762711:trainFiltered <- trainFiltered %>% mutate(satisfaction = switch(satisfaction,
+1689199762714:"satisfied"=1,
+1689199762715:"neutral or dissatisfied"=0))
+1689199763348:testFiltered <- testSet %>% select(Gender, Age, Type_of_Travel, Flight_Distance, Inflight_service, satisfaction)
+1689199763927:head(testFiltered)
+1689199764410:testFiltered <- testFiltered %>% mutate(satisfaction = switch(satisfaction,
+1689199764411:"satisfied"=1,
+1689199764412:"neutral or dissatisfied"=0))
+1689199765710:head(testFiltered)
+1689199769678:#1
+1689199769680:formula <- satisfaction ~ Gender + Age + Type_of_Travel + Flight_Distance + Inflight_service
+1689199778882:#2
+1689199778909:bayes_model <- trainFiltered %>%
+1689199778909:ml_naive_bayes(formula)
+1689199782751:svc_model <- trainFiltered %>%
+1689199782754:ml_linear_svc(formula)
+1689199830290:dt_model <- trainFiltered %>%
+1689199830291:ml_decision_tree_classifier(formula)
+1689199839760:bayes_accuracy <- ml_evaluate(bayes_model, dataset=testFiltered)$Accuracy
+1689200097533:#2
+1689200097533:bayes_model <- ml_naive_bayes(trainFiltered, formula, family = "binomial")
+1689200144061:#2
+1689200144064:bayes_model <- ml_naive_bayes(trainFiltered, formula, model_type = "binomial")
+1689200180625:#2
+1689200180628:bayes_model <- ml_naive_bayes(trainFiltered, formula)
+1689200188374:svc_model <- ml_linear_svc(trainFiltered, formula)
+1689200223848:dt_model <- ml_decision_tree_classifier(trainFiltered, formula)
+1689200228361:bayes_accuracy <- ml_evaluate(bayes_model, dataset=testFiltered)$Accuracy
+1689200307404:spark_disconnect(sc)
+1689200329310:install.packages("gridExtra", repos="https://cran.rstudio.com/")
+1689200350230:library(sparklyr)
+1689200350817:library(dplyr)
+1689200351217:library(ggplot2)
+1689200351534:library(cowplot)
+1689200352545:# Install
+1689200352546:spark_install()
+1689200353689:# Connect
+1689200353690:sc <- sparklyr::spark_connect(master = "local")
+1689200382220:datasetPath <- "/data/train.csv"
+1689200382879:trainSet <- spark_read_csv(sc, name = "train", path = datasetPath, header = TRUE, infer_schema = TRUE)
+1689200389020:trainSet <- na.omit(trainSet)
+1689200391160:datasetPath <- "/data/test.csv"
+1689200391739:testSet <- spark_read_csv(sc, name = "test", path = datasetPath, header = TRUE, infer_schema = TRUE)
+1689200394228:testSet <- na.omit(testSet)
+1689200401268:# Select columns:
+1689200401270:trainFiltered <- trainSet %>% select(Gender, Age, Type_of_Travel, Flight_Distance, Inflight_service, satisfaction)
+1689200406352:trainFiltered <- trainFiltered %>% mutate(satisfaction = switch(satisfaction,
+1689200406355:"satisfied"=1,
+1689200406356:"neutral or dissatisfied"=0))
+1689200409142:testFiltered <- testSet %>% select(Gender, Age, Type_of_Travel, Flight_Distance, Inflight_service, satisfaction)
+1689200411004:head(testFiltered)
+1689200413645:testFiltered <- testFiltered %>% mutate(satisfaction = switch(satisfaction,
+1689200413648:"satisfied"=1,
+1689200413649:"neutral or dissatisfied"=0))
+1689200415249:head(testFiltered)
+1689200418949:#1
+1689200418952:formula <- satisfaction ~ Gender + Age + Type_of_Travel + Flight_Distance + Inflight_service
+1689200432701:#2
+1689200432704:bayes_model <- ml_naive_bayes(trainFiltered, formula)
+1689200455296:bayes_accuracy <- ml_evaluate(bayes_model, dataset=testFiltered)$Accuracy
+1689200642550:install.packages("tidyverse", repos = "https://cran.rstudio.com")
+1689201139288:library(tidyr)
+1689201203138:library(tidyr)
+1689201204680:# Install
+1689201204683:spark_install()
+1689201210277:# Connect
+1689201210280:sc <- sparklyr::spark_connect(master = "local")
+1689201217080:datasetPath <- "/data/train.csv"
+1689201218293:trainSet <- spark_read_csv(sc, name = "train", path = datasetPath, header = TRUE, infer_schema = TRUE)
+1689201221979:trainSet <- na.omit(trainSet)
+1689201224513:datasetPath <- "/data/test.csv"
+1689201224973:testSet <- spark_read_csv(sc, name = "test", path = datasetPath, header = TRUE, infer_schema = TRUE)
+1689201226603:testSet <- na.omit(testSet)
+1689201227902:glimpse(trainSet)
+1689201230224:head(trainSet)
+1689201238526:# Select columns:
+1689201238529:trainFiltered <- trainSet %>% select(Gender, Age, Type_of_Travel, Flight_Distance, Inflight_service, satisfaction)
+1689201240617:trainFiltered <- trainFiltered %>% mutate(satisfaction = switch(satisfaction,
+1689201240620:"satisfied"=1,
+1689201240620:"neutral or dissatisfied"=0))
+1689201243402:testFiltered <- testSet %>% select(Gender, Age, Type_of_Travel, Flight_Distance, Inflight_service, satisfaction)
+1689201244495:testFiltered <- testFiltered %>% mutate(satisfaction = switch(satisfaction,
+1689201244498:"satisfied"=1,
+1689201244498:"neutral or dissatisfied"=0))
+1689201245560:head(testFiltered)
+1689201248254:#1
+1689201248255:formula <- satisfaction ~ Gender + Age + Type_of_Travel + Flight_Distance + Inflight_service
+1689201257442:#2
+1689201257469:bayes_model <- ml_naive_bayes(trainFiltered, formula)
+1689201280503:bayes_accuracy <- ml_evaluate(bayes_model, dataset=testFiltered)$Accuracy
+1689201284054:svc_accuracy <- ml_evaluate(svc_model, dataset=testFiltered)$Accuracy
+1689201288072:dt_model <- ml_decision_tree_classifier(trainFiltered, formula)
+1689201291446:dt_accuracy <- ml_evaluate(dt_model, dataset=testFiltered)$Accuracy
+1689201318615:library(tidyr)
+1689201358663:library(tidyr)
+1689201402033:spark_disconnect(sc)
+1689201432014:install.packages("tidyverse", repos = "https://cran.rstudio.com")
+1689201474252:library(tidyr)
+1689201475877:library(sparklyr)
+1689201477218:library(dplyr)
+1689201478019:library(ggplot2)
+1689201478633:library(magrittr)
+1689201537875:library(tidyr)
+1689201597245:install.packages("rlang", repos = "https://cran.rstudio.com")

@@ -1,8 +1,11 @@
-install.packages("gridExtra", repos="https://cran.rstudio.com/")
+install.packages("tidyverse", repos = "https://cran.rstudio.com")
+install.packages("rlang", repos = "https://cran.rstudio.com") 
+library(tidyr)
 library(sparklyr)
 library(dplyr)
 library(ggplot2)
-library(cowplot)
+library(magrittr)
+
 
 # Install
 spark_install()
@@ -35,68 +38,134 @@ testFiltered <- testFiltered %>% mutate(satisfaction = switch(satisfaction,
                                                                 "neutral or dissatisfied"=0))
 head(testFiltered)
 
+#1
 formula <- satisfaction ~ Gender + Age + Type_of_Travel + Flight_Distance + Inflight_service
-samples <- c(1:3)
-max_iterations <- samples * 6
-log.reg.weighted.precision <- samples
-log.reg.weighted.recall <- samples
-log.reg.weighted.f.measure <- samples
-log.reg.area.under.roc <- samples
-log.reg.accuracy <- samples
+samples <- c(1:4)
+max_iterations <- samples * 4
+weighted_precision <- samples
+weighted_recall <- samples
+weighted_f_measure <- samples
+area_under_roc <- samples
+accuracy <- samples
 
 for(i in samples){
-  logreg <- ml_logistic_regression(trainFiltered,
+  model <- ml_logistic_regression(trainFiltered,
                                    formula,
                                    max_iter = max_iterations[i],
                                    family = "binomial")
-  evaluation <- ml_evaluate(logreg, dataset=testFiltered)
-  log.reg.weighted.precision[i] <- evaluation$weighted_precision()
-  log.reg.weighted.recall[i] <- evaluation$weighted_recall()
-  log.reg.weighted.f.measure[i] <- evaluation$weighted_f_measure()
-  log.reg.area.under.roc[i] <- evaluation$area_under_roc()
-  log.reg.accuracy[i] <- evaluation$accuracy()
+  evaluation <- ml_evaluate(model, dataset=testFiltered)
+  weighted_precision[i] <- evaluation$weighted_precision()
+  weighted_recall[i] <- evaluation$weighted_recall()
+  weighted_f_measure[i] <- evaluation$weighted_f_measure()
+  area_under_roc[i] <- evaluation$area_under_roc()
+  accuracy[i] <- evaluation$accuracy()
 }
 
 df <- data.frame(i=max_iterations,
-                 wp=log.reg.weighted.precision,
-                 wr=log.reg.weighted.recall,
-                 wf=log.reg.weighted.f.measure,
-                 aur=log.reg.area.under.roc,
-                 a=log.reg.accuracy)
+                 wp=weighted_precision,
+                 wr=weighted_recall,
+                 wf=weighted_f_measure,
+                 aur=area_under_roc,
+                 a=accuracy)
+print(df)
 p1 <- df %>%
   ggplot(aes(i, wp, color=wp)) +
   geom_line(size=2) +
   scale_x_continuous(breaks=max_iterations) +
-  scale_y_continuous(breaks=log.reg.weighted.precision) +
+  scale_y_continuous(breaks=weighted_precision) +
   theme(text = element_text(size = 16)) +
-  labs(x="Maksimalni broj iteracija", y="Preciznost", title = "a) Zavisnost preciznosti od maksimalnog broja iteracija")
+  labs(x="Iterations", y="Precision")
 
 p2 <- df %>%
   ggplot(aes(i, wr, color=wr)) +
   geom_line(size=2) +
   scale_x_continuous(breaks=max_iterations) +
-  scale_y_continuous(breaks=log.reg.weighted.recall) +
+  scale_y_continuous(breaks=weighted_recall) +
   theme(text = element_text(size = 16)) +
-  labs(x="Maksimalni broj iteracija", y="Osetljivost", title = "b) Zavisnost osetljivosti od maksimalnog broja iteracija")
+  labs(x="Iterations", y="Recall")
 
 p3 <- df %>%
-  ggplot(aes(i, a, color=wf)) +
+  ggplot(aes(i, a, color=a)) +
   geom_line(size=2) +
   scale_x_continuous(breaks=max_iterations) +
-  scale_y_continuous(breaks=log.reg.accuracy) +
+  scale_y_continuous(breaks=accuracy) +
   theme(text = element_text(size = 16)) +
-  labs(x="Maksimalni broj iteracija", y="F1", title = "c) Zavisnost F1 mere od maksimalnog broja iteracija")
+  labs(x="Iterations", y="Accuracy")
 
 p4 <- df %>%
   ggplot(aes(i, aur, color=aur)) +
   geom_line(size=2) +
   scale_x_continuous(breaks=max_iterations) +
-  scale_y_continuous(breaks=log.reg.area.under.roc) +
+  scale_y_continuous(breaks=area_under_roc) +
   theme(text = element_text(size = 16)) +
-  labs(x="Mkaismalni broj iteracija", y="Površina ispod ROC krive", title = "d) Zavisnost površine ispod ROC krive od maksimalnog broja iteracija")
+  labs(x="Iterations", y="Area under ROC")
+
+p5 <- df %>%
+  ggplot(aes(i, wf, color=wf)) +
+  geom_line(size=2) +
+  scale_x_continuous(breaks=max_iterations) +
+  scale_y_continuous(breaks=weighted_f_measure) +
+  theme(text = element_text(size = 16)) +
+  labs(x="Iterations", y="F measure")
+
 p1
 p2
 p3
 p4
+p5
+
+#2
+bayes_model <- ml_naive_bayes(trainFiltered, formula)
+
+svc_model <- ml_linear_svc(trainFiltered, formula)
+
+dt_model <- ml_decision_tree_classifier(trainFiltered, formula)
+
+bayes_accuracy <- ml_evaluate(bayes_model, dataset=testFiltered)$Accuracy
+svc_accuracy <- ml_evaluate(svc_model, dataset=testFiltered)$Accuracy
+dt_accuracy <- ml_evaluate(dt_model, dataset=testFiltered)$Accuracy
+
+# 4-trostruko ukrstanje
+k_cross_fold_validation <- function(dataset, model, formula){
+  dataset <- dataset %>%
+    sdf_random_split(seed=1,
+                     s1=0.25,
+                     s2=0.25,
+                     s3=0.25,
+                     s4=0.25)
+  training <- list(
+    s1 = sdf_bind_rows(dataset$s2, dataset$s3, dataset$s4),
+    s2 = sdf_bind_rows(dataset$s1, dataset$s3, dataset$s4),
+    s3 = sdf_bind_rows(dataset$s1, dataset$s2, dataset$s4),
+    s4 = sdf_bind_rows(dataset$s1, dataset$s2, dataset$s3)
+  )
+  
+  trained = list(s1=model(training$s1, formula),
+                 s2=model(training$s2, formula),
+                 s3=model(training$s3, formula),
+                 s4=model(training$s4, formula)
+  )
+  
+  model.accuracy <- (ml_evaluate(trained$s1, dataset$s1)$Accuracy +
+                       ml_evaluate(trained$s2, dataset$s2)$Accuracy +
+                       ml_evaluate(trained$s3, dataset$s3)$Accuracy +
+                       ml_evaluate(trained$s4, dataset$s4)$Accuracy
+  ) / 4
+}
+
+bayes_k_cross_fold_accuracy <- k_cross_fold_validation(water.dataset.filtered, ml_naive_bayes, formula)
+svc_k_cross_fold_accuracy <- k_cross_fold_validation(water.dataset.filtered, ml_linear_svc, formula)
+dt_k_cross_fold_accuracy <- k_cross_fold_validation(water.dataset.filtered, ml_decision_tree_classifier, formula)
+
+knitr::kable(array(c("Bayes-ov model", "Mašina potpornih vektora", "Stablo odlučivanja",
+                     bayes_accuracy, svc_accuracy, dt_accuracy,
+                     bayes_k_cross_fold_accuracy, svc_k_cross_fold_accuracy, dt_k_cross_fold_accuracy),
+                   dim = c(3, 3)),
+             col.names = c("Model", "Preciznost korišćenjem validacionog skupa", "Preciznost korišćenjem 4-strukog ukrštanja"),
+             label = "Poređenje tačnosti različitih klasifikacionih modela u odnosu na načine validacije",
+             align = "ccc",
+             format = "html"
+) %>%
+  kableExtra::kable_styling(bootstrap_options = "bordered", full_width = F, font_size = 16)
 
 spark_disconnect(sc)

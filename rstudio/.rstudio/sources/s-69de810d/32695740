@@ -1,0 +1,24 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1689199938287.000,
+    "dirty" : false,
+    "encoding" : "",
+    "folds" : "",
+    "hash" : "0",
+    "id" : "32695740",
+    "lastKnownWriteTime" : 7598807775587955312,
+    "last_content_update" : 1689199938287,
+    "path" : null,
+    "project_path" : null,
+    "properties" : {
+        "context" : "package:sparklyr:::ml_naive_bayes"
+    },
+    "read_only" : false,
+    "read_only_alternatives" : [
+    ],
+    "relative_order" : 4,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_code_browser"
+}
