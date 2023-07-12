@@ -45,3 +45,1142 @@
 1686134639084:df <- spark_read_csv(sc, name = "my_data", path = datasetPath, header = TRUE, infer_schema = TRUE)
 1686134659686:glimpse(df)
 1686134677213:head(df)
+1689170753228:library(sparklyr)
+1689170754897:library(dplyr)
+1689170762761:# Install
+1689170762762:spark_install()
+1689170939845:datasetPath <- "/data/train.csv"
+1689170942009:trainSet <- spark_read_csv(sc, name = "my_data", path = datasetPath, header = TRUE, infer_schema = TRUE)
+1689170954744:# Connect
+1689170954747:sc <- sparklyr::spark_connect(master = "local")
+1689170963123:datasetPath <- "/data/train.csv"
+1689170963444:trainSet <- spark_read_csv(sc, name = "my_data", path = datasetPath, header = TRUE, infer_schema = TRUE)
+1689170970462:trainSet <- na.omit(trainSet)
+1689170974395:datasetPath <- "/data/test.csv"
+1689170979683:testSet <- spark_read_csv(sc, name = "my_data", path = datasetPath, header = TRUE, infer_schema = TRUE)
+1689170986193:testSet <- na.omit(testSet)
+1689170989747:glimpse(trainSet)
+1689171000451:head(trainSet)
+1689171012124:# Extract column names
+1689171012127:column_names <- colnames(trainSet)
+1689171014671:# Select the relevant columns for prediction
+1689171014674:selected_columns <- c("Gender", "Customer_Type", "Age", "Type_of_Travel", "Class", "Flight_Distance",
+1689171014674:"Inflight_wifi_service", "DepartureArrival_time_convenient", "Ease_of_Online_booking",
+1689171014675:"Food_and_drink", "Online_boarding", "Seat_comfort",
+1689171014675:"Inflight_entertainment", "Onboard_service", "Leg_room_service", "Baggage_handling",
+1689171014676:"Checkin_service", "Inflight_service", "Cleanliness", "Departure_Delay_in_Minutes",
+1689171014676:"Arrival_Delay_in_Minutes", "satisfaction")
+1689171017573:# Check if selected columns exist in the dataset
+1689171017576:missing_columns <- setdiff(selected_columns, column_names)
+1689171021355:if (length(missing_columns) > 0) {
+1689171021356:stop(paste("The following columns are missing in the dataset:", paste(missing_columns, collapse = ", ")))
+1689171021356:}
+1689171024238:# Select the relevant columns
+1689171024241:trainSet <- trainSet %>% select(one_of(selected_columns))
+1689171025370:testSet <- testSet %>% select(one_of(selected_columns))
+1689171027146:# Convert categorical variables to factors
+1689171027148:trainSet <- trainSet %>% mutate(across(everything(), as.factor))
+1689171041266:testSet <- testSet %>% mutate(across(everything(), as.factor))
+1689171042947:# Define a list of classification methods
+1689171042947:methods <- c("Logistic Regression")
+1689171044187:# Initialize a list to store evaluation results
+1689171044190:eval_results <- list()
+1689171046792:# Iterate over each method
+1689171046795:for (method in methods) {
+1689171046795:cat("Running", method, "\n")
+1689171046796:# Train the model
+1689171046797:if (method == "Logistic Regression") {
+1689171046797:model <- ml_logistic_regression(trainSet, satisfaction ~ .)
+1689171046798:} else if (method == "Random Forest") {
+1689171046798:model <- ml_random_forest(trainSet, satisfaction ~ .)
+1689171046799:} else if (method == "Gradient-Boosted Trees") {
+1689171046800:model <- ml_gradient_boosted_trees(trainSet, satisfaction ~ .)
+1689171046800:} else {
+1689171046801:cat("Unsupported method:", method, "\n")
+1689171046801:next
+1689171046802:}
+1689171046803:# Evaluate the model and store the results
+1689171046803:predictions <- ml_predict(model, testSet)
+1689171046804:predictedLabels <- collect(select(predictions, prediction))
+1689171046805:trueLabels <- collect(select(testSet, satisfaction))
+1689171046805:accuracy <- sum(predictedLabels == trueLabels) / length(trueLabels)
+1689171046806:# precision <- precision(predictedLabels, trueLabels, positive = "label_value")
+1689171046807:# recall <- recall(predictedLabels, trueLabels, positive = "label_value")
+1689171046808:eval_results[[method]] <- list(
+1689171046809:accuracy = accuracy
+1689171046810:# precision = precision,
+1689171046811:# recall = recall
+1689171046812:)
+1689171046814:}
+1689171069716:# Initialize a list to store evaluation results
+1689171069745:eval_results <- list()
+1689171075609:# Define a list of classification methods
+1689171075612:methods <- c("Logistic Regression")
+1689171078660:# Iterate over each method
+1689171078663:for (method in methods) {
+1689171078663:cat("Running", method, "\n")
+1689171078664:# Train the model
+1689171078664:if (method == "Logistic Regression") {
+1689171078665:model <- ml_logistic_regression(trainSet, satisfaction ~ .)
+1689171078665:} else if (method == "Random Forest") {
+1689171078665:model <- ml_random_forest(trainSet, satisfaction ~ .)
+1689171078666:} else if (method == "Gradient-Boosted Trees") {
+1689171078666:model <- ml_gradient_boosted_trees(trainSet, satisfaction ~ .)
+1689171078667:} else {
+1689171078667:cat("Unsupported method:", method, "\n")
+1689171078668:next
+1689171078668:}
+1689171078668:# Evaluate the model and store the results
+1689171078669:predictions <- ml_predict(model, testSet)
+1689171078669:predictedLabels <- collect(select(predictions, prediction))
+1689171078670:trueLabels <- collect(select(testSet, satisfaction))
+1689171078670:accuracy <- sum(predictedLabels == trueLabels) / length(trueLabels)
+1689171078671:# precision <- precision(predictedLabels, trueLabels, positive = "label_value")
+1689171078671:# recall <- recall(predictedLabels, trueLabels, positive = "label_value")
+1689171078672:eval_results[[method]] <- list(
+1689171078672:accuracy = accuracy
+1689171078673:# precision = precision,
+1689171078673:# recall = recall
+1689171078675:)
+1689171078675:}
+1689171082876:# Print evaluation results
+1689171082877:for (method in methods) {
+1689171082877:cat("Evaluation results for", method, ":\n")
+1689171082878:print(eval_results[[method]])
+1689171082879:cat("\n")
+1689171082880:}
+1689171089159:# Print evaluation results
+1689171089162:for (method in methods) {
+1689171089163:cat("Evaluation results for", method, ":\n")
+1689171089163:print(eval_results[[method]])
+1689171089164:cat("\n")
+1689171089164:}
+1689171099826:# Define a list of classification methods
+1689171099830:methods <- c("Logistic Regression")
+1689171100279:# Initialize a list to store evaluation results
+1689171100282:eval_results <- list()
+1689171143537:head(testSet)
+1689171165736:testSet <- testSet %>% mutate(across(everything(), as.factor))
+1689171176781:head(testSet)
+1689171190630:head(trainSet)
+1689171212953:# Define a list of classification methods
+1689171212956:methods <- c("Logistic Regression")
+1689171214622:# Initialize a list to store evaluation results
+1689171214624:eval_results <- list()
+1689171216145:# Iterate over each method
+1689171216147:for (method in methods) {
+1689171216148:cat("Running", method, "\n")
+1689171216149:# Train the model
+1689171216150:if (method == "Logistic Regression") {
+1689171216150:model <- ml_logistic_regression(trainSet, satisfaction ~ .)
+1689171216151:} else if (method == "Random Forest") {
+1689171216151:model <- ml_random_forest(trainSet, satisfaction ~ .)
+1689171216152:} else if (method == "Gradient-Boosted Trees") {
+1689171216153:model <- ml_gradient_boosted_trees(trainSet, satisfaction ~ .)
+1689171216153:} else {
+1689171216154:cat("Unsupported method:", method, "\n")
+1689171216154:next
+1689171216155:}
+1689171216156:# Evaluate the model and store the results
+1689171216156:predictions <- ml_predict(model, testSet)
+1689171216157:predictedLabels <- collect(select(predictions, prediction))
+1689171216158:trueLabels <- collect(select(testSet, satisfaction))
+1689171216158:accuracy <- sum(predictedLabels == trueLabels) / length(trueLabels)
+1689171216159:# precision <- precision(predictedLabels, trueLabels, positive = "label_value")
+1689171216160:# recall <- recall(predictedLabels, trueLabels, positive = "label_value")
+1689171216161:eval_results[[method]] <- list(
+1689171216162:accuracy = accuracy
+1689171216162:# precision = precision,
+1689171216163:# recall = recall
+1689171216164:)
+1689171216165:}
+1689171461165:glimpse(trainSet)
+1689171462253:head(trainSet)
+1689171465464:datasetPath <- "/data/train.csv"
+1689171466159:trainSet <- spark_read_csv(sc, name = "my_data", path = datasetPath, header = TRUE, infer_schema = TRUE)
+1689171467812:trainSet <- na.omit(trainSet)
+1689171468808:datasetPath <- "/data/test.csv"
+1689171469332:testSet <- spark_read_csv(sc, name = "my_data", path = datasetPath, header = TRUE, infer_schema = TRUE)
+1689171470730:testSet <- na.omit(testSet)
+1689171473630:glimpse(trainSet)
+1689171475689:head(trainSet)
+1689171481147:# Extract column names
+1689171481150:column_names <- colnames(trainSet)
+1689171483422:# Select the relevant columns for prediction
+1689171483425:selected_columns <- c("Gender", "Customer_Type", "Age", "Type_of_Travel", "Class", "Flight_Distance",
+1689171483426:"Inflight_wifi_service", "DepartureArrival_time_convenient", "Ease_of_Online_booking",
+1689171483427:"Food_and_drink", "Online_boarding", "Seat_comfort",
+1689171483428:"Inflight_entertainment", "Onboard_service", "Leg_room_service", "Baggage_handling",
+1689171483428:"Checkin_service", "Inflight_service", "Cleanliness", "Departure_Delay_in_Minutes",
+1689171483429:"Arrival_Delay_in_Minutes", "satisfaction")
+1689171486533:# Check if selected columns exist in the dataset
+1689171486536:missing_columns <- setdiff(selected_columns, column_names)
+1689171489442:if (length(missing_columns) > 0) {
+1689171489445:stop(paste("The following columns are missing in the dataset:", paste(missing_columns, collapse = ", ")))
+1689171489446:}
+1689171499540:# Select the relevant columns
+1689171499543:trainSet <- trainSet %>% select(one_of(selected_columns))
+1689171501038:testSet <- testSet %>% select(one_of(selected_columns))
+1689171502208:# Convert categorical variables to factors
+1689171502211:trainSet <- trainSet %>% mutate(across(everything(), as.factor))
+1689171503214:testSet <- testSet %>% mutate(across(everything(), as.factor))
+1689171504410:# Define a list of classification methods
+1689171504413:methods <- c("Logistic Regression")
+1689171506036:# Initialize a list to store evaluation results
+1689171506039:eval_results <- list()
+1689171507680:# Iterate over each method
+1689171507683:for (method in methods) {
+1689171507683:cat("Running", method, "\n")
+1689171507684:# Train the model
+1689171507685:if (method == "Logistic Regression") {
+1689171507685:model <- ml_logistic_regression(trainSet, satisfaction ~ .)
+1689171507686:} else if (method == "Random Forest") {
+1689171507686:model <- ml_random_forest(trainSet, satisfaction ~ .)
+1689171507687:} else if (method == "Gradient-Boosted Trees") {
+1689171507688:model <- ml_gradient_boosted_trees(trainSet, satisfaction ~ .)
+1689171507688:} else {
+1689171507689:cat("Unsupported method:", method, "\n")
+1689171507689:next
+1689171507690:}
+1689171507691:# Evaluate the model and store the results
+1689171507691:predictions <- ml_predict(model, testSet)
+1689171507692:predictedLabels <- collect(select(predictions, prediction))
+1689171507693:trueLabels <- collect(select(testSet, satisfaction))
+1689171507696:accuracy <- sum(predictedLabels == trueLabels) / length(trueLabels)
+1689171507697:# precision <- precision(predictedLabels, trueLabels, positive = "label_value")
+1689171507698:# recall <- recall(predictedLabels, trueLabels, positive = "label_value")
+1689171507699:eval_results[[method]] <- list(
+1689171507700:accuracy = accuracy
+1689171507701:# precision = precision,
+1689171507702:# recall = recall
+1689171507702:)
+1689171507703:}
+1689171512406:# Print evaluation results
+1689171512409:for (method in methods) {
+1689171512410:cat("Evaluation results for", method, ":\n")
+1689171512410:print(eval_results[[method]])
+1689171512411:cat("\n")
+1689171512411:}
+1689171518012:# Print evaluation results
+1689171518012:for (method in methods) {
+1689171518013:cat("Evaluation results for", method, ":\n")
+1689171518014:print(eval_results[[method]])
+1689171518014:cat("\n")
+1689171518015:}
+1689171535690:# Initialize a list to store evaluation results
+1689171535693:eval_results <- list()
+1689171539728:# Print evaluation results
+1689171539731:for (method in methods) {
+1689171539731:cat("Evaluation results for", method, ":\n")
+1689171539732:print(eval_results[[method]])
+1689171539732:cat("\n")
+1689171539733:}
+1689171889384:# Define a list of classification methods
+1689171889388:methods <- c("Logistic Regression")
+1689171889855:# Initialize a list to store evaluation results
+1689171889858:eval_results <- list()
+1689171902642:# Iterate over each method
+1689171902645:for (method in methods) {
+1689171902646:cat("Running", method, "\n")
+1689171902647:# Train the model
+1689171902648:if (method == "Logistic Regression") {
+1689171902648:model <- ml_logistic_regression(trainSet, satisfaction ~ .)
+1689171902649:} else if (method == "Random Forest") {
+1689171902649:model <- ml_random_forest(trainSet, satisfaction ~ .)
+1689171902650:} else if (method == "Gradient-Boosted Trees") {
+1689171902650:model <- ml_gradient_boosted_trees(trainSet, satisfaction ~ .)
+1689171902651:} else {
+1689171902652:cat("Unsupported method:", method, "\n")
+1689171902652:next
+1689171902653:}
+1689171902654:# Evaluate the model and store the results
+1689171902654:predictions <- ml_predict(model, testSet)
+1689171902655:predictedLabels <- collect(select(predictions, prediction))
+1689171902655:trueLabels <- collect(select(testSet, satisfaction))
+1689171902656:accuracy <- sum(predictedLabels == trueLabels) / length(trueLabels)
+1689171902657:# precision <- precision(predictedLabels, trueLabels, positive = "label_value")
+1689171902658:# recall <- recall(predictedLabels, trueLabels, positive = "label_value")
+1689171902659:eval_results[[method]] <- list(
+1689171902660:accuracy = accuracy
+1689171902660:# precision = precision,
+1689171902661:# recall = recall
+1689171902662:)
+1689171902663:}
+1689171932821:# Define a list of classification methods
+1689171932824:methods <- c("Logistic Regression")
+1689171934115:# Initialize a list to store evaluation results
+1689171934118:eval_results <- list()
+1689171934990:# Iterate over each method
+1689171934994:for (method in methods) {
+1689171934994:cat("Running", method, "\n")
+1689171934996:# Train the model
+1689171934996:if (method == "Logistic Regression") {
+1689171934997:model <- ml_logistic_regression(trainSet, satisfaction ~ .)
+1689171934997:} else if (method == "Random Forest") {
+1689171934998:model <- ml_random_forest(trainSet, satisfaction ~ .)
+1689171934998:} else if (method == "Gradient-Boosted Trees") {
+1689171934999:model <- ml_gradient_boosted_trees(trainSet, satisfaction ~ .)
+1689171934999:} else {
+1689171935000:cat("Unsupported method:", method, "\n")
+1689171935001:next
+1689171935001:}
+1689171935002:# Evaluate the model and store the results
+1689171935003:predictions <- ml_predict(model, testSet)
+1689171935003:predictedLabels <- collect(select(predictions, prediction))
+1689171935004:trueLabels <- collect(select(testSet, satisfaction))
+1689171935004:accuracy <- sum(predictedLabels == trueLabels) / length(trueLabels)
+1689171935005:# precision <- precision(predictedLabels, trueLabels, positive = "label_value")
+1689171935006:# recall <- recall(predictedLabels, trueLabels, positive = "label_value")
+1689171935007:eval_results[[method]] <- list(
+1689171935008:accuracy = accuracy
+1689171935009:# precision = precision,
+1689171935010:# recall = recall
+1689171935011:)
+1689171935012:}
+1689172151524:library(sparklyr)
+1689172152782:library(dplyr)
+1689172154061:# Install
+1689172154064:spark_install()
+1689172156789:# Connect
+1689172156792:sc <- sparklyr::spark_connect(master = "local")
+1689172162201:datasetPath <- "/data/train.csv"
+1689172162726:trainSet <- spark_read_csv(sc, name = "my_data", path = datasetPath, header = TRUE, infer_schema = TRUE)
+1689172164289:trainSet <- na.omit(trainSet)
+1689172166219:datasetPath <- "/data/test.csv"
+1689172166600:testSet <- spark_read_csv(sc, name = "my_data", path = datasetPath, header = TRUE, infer_schema = TRUE)
+1689172168004:testSet <- na.omit(testSet)
+1689172169548:glimpse(trainSet)
+1689172170897:head(trainSet)
+1689172173062:# Extract column names
+1689172173063:column_names <- colnames(trainSet)
+1689172175209:# Select the relevant columns for prediction
+1689172175212:selected_columns <- c("Gender", "Customer_Type", "Age", "Type_of_Travel", "Class", "Flight_Distance",
+1689172175213:"Inflight_wifi_service", "DepartureArrival_time_convenient", "Ease_of_Online_booking",
+1689172175213:"Food_and_drink", "Online_boarding", "Seat_comfort",
+1689172175214:"Inflight_entertainment", "Onboard_service", "Leg_room_service", "Baggage_handling",
+1689172175214:"Checkin_service", "Inflight_service", "Cleanliness", "Departure_Delay_in_Minutes",
+1689172175215:"Arrival_Delay_in_Minutes", "satisfaction")
+1689172176958:# Check if selected columns exist in the dataset
+1689172176961:missing_columns <- setdiff(selected_columns, column_names)
+1689172178389:if (length(missing_columns) > 0) {
+1689172178392:stop(paste("The following columns are missing in the dataset:", paste(missing_columns, collapse = ", ")))
+1689172178393:}
+1689172179799:# Select the relevant columns
+1689172179802:trainSet <- trainSet %>% select(one_of(selected_columns))
+1689172180857:testSet <- testSet %>% select(one_of(selected_columns))
+1689172181806:# Convert categorical variables to factors
+1689172181808:trainSet <- trainSet %>% mutate(across(everything(), as.factor))
+1689172182327:testSet <- testSet %>% mutate(across(everything(), as.factor))
+1689172182971:# Define a list of classification methods
+1689172182974:methods <- c("Logistic Regression")
+1689172183460:# Initialize a list to store evaluation results
+1689172183463:eval_results <- list()
+1689172184891:# Iterate over each method
+1689172184894:for (method in methods) {
+1689172184895:cat("Running", method, "\n")
+1689172184895:# Train the model
+1689172184896:if (method == "Logistic Regression") {
+1689172184896:model <- ml_logistic_regression(trainSet, satisfaction ~ .)
+1689172184897:} else if (method == "Random Forest") {
+1689172184898:model <- ml_random_forest(trainSet, satisfaction ~ .)
+1689172184898:} else if (method == "Gradient-Boosted Trees") {
+1689172184899:model <- ml_gradient_boosted_trees(trainSet, satisfaction ~ .)
+1689172184899:} else {
+1689172184900:cat("Unsupported method:", method, "\n")
+1689172184900:next
+1689172184901:}
+1689172184902:# Evaluate the model and store the results
+1689172184902:predictions <- ml_predict(model, testSet)
+1689172184903:predictedLabels <- collect(select(predictions, prediction))
+1689172184904:trueLabels <- collect(select(testSet, satisfaction))
+1689172184904:accuracy <- sum(predictedLabels == trueLabels) / length(trueLabels)
+1689172184905:# precision <- precision(predictedLabels, trueLabels, positive = "label_value")
+1689172184906:# recall <- recall(predictedLabels, trueLabels, positive = "label_value")
+1689172184907:eval_results[[method]] <- list(
+1689172184907:accuracy = accuracy
+1689172184908:# precision = precision,
+1689172184909:# recall = recall
+1689172184910:)
+1689172184910:}
+1689181654549:# Connect
+1689181654552:sc <- sparklyr::spark_connect(master = "local")
+1689181660975:datasetPath <- "/data/train.csv"
+1689181661006:trainSet <- spark_read_csv(sc, name = "my_data", path = datasetPath, header = TRUE, infer_schema = TRUE)
+1689181662459:trainSet <- na.omit(trainSet)
+1689181663324:datasetPath <- "/data/test.csv"
+1689181664001:testSet <- spark_read_csv(sc, name = "my_data", path = datasetPath, header = TRUE, infer_schema = TRUE)
+1689181673867:# Install
+1689181673870:spark_install()
+1689181678592:library(sparklyr)
+1689181679698:library(dplyr)
+1689181683170:# Install
+1689181683171:spark_install()
+1689181685454:# Connect
+1689181685457:sc <- sparklyr::spark_connect(master = "local")
+1689181687530:datasetPath <- "/data/train.csv"
+1689181688342:trainSet <- spark_read_csv(sc, name = "my_data", path = datasetPath, header = TRUE, infer_schema = TRUE)
+1689181692668:trainSet <- na.omit(trainSet)
+1689181698059:datasetPath <- "/data/test.csv"
+1689181699006:testSet <- spark_read_csv(sc, name = "my_data", path = datasetPath, header = TRUE, infer_schema = TRUE)
+1689181700211:testSet <- na.omit(testSet)
+1689181702013:glimpse(trainSet)
+1689181702906:head(trainSet)
+1689181772219:# Extract column names
+1689181772222:column_names <- colnames(trainSet)
+1689181776671:# Select the relevant columns for prediction
+1689181776674:selected_columns <- c("Gender", "Customer_Type", "Age", "Type_of_Travel", "Class", "Flight_Distance",
+1689181776674:"Inflight_wifi_service", "DepartureArrival_time_convenient", "Ease_of_Online_booking",
+1689181776675:"Food_and_drink", "Online_boarding", "Seat_comfort",
+1689181776676:"Inflight_entertainment", "Onboard_service", "Leg_room_service", "Baggage_handling",
+1689181776676:"Checkin_service", "Inflight_service", "Cleanliness", "Departure_Delay_in_Minutes",
+1689181776677:"Arrival_Delay_in_Minutes", "satisfaction")
+1689181785114:# Check if selected columns exist in the dataset
+1689181785117:missing_columns <- setdiff(selected_columns, column_names)
+1689181786771:if (length(missing_columns) > 0) {
+1689181786774:stop(paste("The following columns are missing in the dataset:", paste(missing_columns, collapse = ", ")))
+1689181786775:}
+1689181794976:# Select the relevant columns
+1689181794979:trainSet <- trainSet %>% select(one_of(selected_columns))
+1689181796467:testSet <- testSet %>% select(one_of(selected_columns))
+1689181797354:# Convert categorical variables to factors
+1689181797357:trainSet <- trainSet %>% mutate(across(everything(), as.factor))
+1689181798449:testSet <- testSet %>% mutate(across(everything(), as.factor))
+1689182216171:datasetPath <- "/data/train.csv"
+1689182217959:trainSet <- spark_read_csv(sc, name = "train", path = datasetPath, header = TRUE, infer_schema = TRUE)
+1689182219159:trainSet <- na.omit(trainSet)
+1689182224744:datasetPath <- "/data/test.csv"
+1689182225304:testSet <- spark_read_csv(sc, name = "test", path = datasetPath, header = TRUE, infer_schema = TRUE)
+1689182243405:testSet <- na.omit(testSet)
+1689182297521:glimpse(trainSet)
+1689182298142:head(trainSet)
+1689182397169:# Extract column names
+1689182397169:column_names <- colnames(trainSet)
+1689182398558:# Select the relevant columns for prediction
+1689182398561:selected_columns <- c("Gender", "Customer_Type", "Age", "Type_of_Travel", "Class", "Flight_Distance",
+1689182398562:"Inflight_wifi_service", "DepartureArrival_time_convenient", "Ease_of_Online_booking",
+1689182398562:"Food_and_drink", "Online_boarding", "Seat_comfort",
+1689182398563:"Inflight_entertainment", "Onboard_service", "Leg_room_service", "Baggage_handling",
+1689182398563:"Checkin_service", "Inflight_service", "Cleanliness", "Departure_Delay_in_Minutes",
+1689182398564:"Arrival_Delay_in_Minutes", "satisfaction")
+1689182399466:# Check if selected columns exist in the dataset
+1689182399469:missing_columns <- setdiff(selected_columns, column_names)
+1689182400143:if (length(missing_columns) > 0) {
+1689182400146:stop(paste("The following columns are missing in the dataset:", paste(missing_columns, collapse = ", ")))
+1689182400147:}
+1689182401045:# Select the relevant columns
+1689182401048:trainSet <- trainSet %>% select(one_of(selected_columns))
+1689182401656:testSet <- testSet %>% select(one_of(selected_columns))
+1689182402106:# Convert categorical variables to factors
+1689182402107:trainSet <- trainSet %>% mutate(across(everything(), as.factor))
+1689182402555:testSet <- testSet %>% mutate(across(everything(), as.factor))
+1689182403370:# Define a list of classification methods
+1689182403373:methods <- c("Logistic Regression")
+1689182406314:# Initialize a list to store evaluation results
+1689182406317:eval_results <- list()
+1689182408124:# Iterate over each method
+1689182408125:for (method in methods) {
+1689182408126:cat("Running", method, "\n")
+1689182408127:# Train the model
+1689182408128:if (method == "Logistic Regression") {
+1689182408128:model <- ml_logistic_regression(trainSet, satisfaction ~ .)
+1689182408129:} else if (method == "Random Forest") {
+1689182408129:model <- ml_random_forest(trainSet, satisfaction ~ .)
+1689182408130:} else if (method == "Gradient-Boosted Trees") {
+1689182408131:model <- ml_gradient_boosted_trees(trainSet, satisfaction ~ .)
+1689182408131:} else {
+1689182408132:cat("Unsupported method:", method, "\n")
+1689182408132:next
+1689182408133:}
+1689182408134:# Evaluate the model and store the results
+1689182408134:predictions <- ml_predict(model, testSet)
+1689182408135:predictedLabels <- collect(select(predictions, prediction))
+1689182408136:trueLabels <- collect(select(testSet, satisfaction))
+1689182408136:accuracy <- sum(predictedLabels == trueLabels) / length(trueLabels)
+1689182408137:# precision <- precision(predictedLabels, trueLabels, positive = "label_value")
+1689182408138:# recall <- recall(predictedLabels, trueLabels, positive = "label_value")
+1689182408140:eval_results[[method]] <- list(
+1689182408141:accuracy = accuracy
+1689182408141:# precision = precision,
+1689182408142:# recall = recall
+1689182408143:)
+1689182408144:}
+1689182518827:head(trainSet)
+1689182542260:# Define a list of classification methods
+1689182542263:methods <- c("Logistic Regression")
+1689182544117:# Initialize a list to store evaluation results
+1689182544120:eval_results <- list()
+1689182793935:glimpse(trainSet)
+1689182797569:datasetPath <- "/data/train.csv"
+1689182798084:trainSet <- spark_read_csv(sc, name = "train", path = datasetPath, header = TRUE, infer_schema = TRUE)
+1689182799074:trainSet <- na.omit(trainSet)
+1689182868974:datasetPath <- "/data/test.csv"
+1689182869372:testSet <- spark_read_csv(sc, name = "test", path = datasetPath, header = TRUE, infer_schema = TRUE)
+1689182870331:testSet <- na.omit(testSet)
+1689182895760:# Extract column names
+1689182895763:column_names <- colnames(trainSet)
+1689182911288:column_names
+1689184140099:# Connect
+1689184140099:sc <- sparklyr::spark_connect(master = "local")
+1689184141866:datasetPath <- "/data/train.csv"
+1689184143019:trainSet <- spark_read_csv(sc, name = "train", path = datasetPath, header = TRUE, infer_schema = TRUE)
+1689184144413:trainSet <- na.omit(trainSet)
+1689184146040:datasetPath <- "/data/test.csv"
+1689184146559:testSet <- spark_read_csv(sc, name = "test", path = datasetPath, header = TRUE, infer_schema = TRUE)
+1689184147630:testSet <- na.omit(testSet)
+1689184150460:glimpse(trainSet)
+1689184151863:head(trainSet)
+1689184166072:# Select columns:
+1689184166075:trainSet <- select(Gender, Age, Type_of_Travel, Flight_Distance, Inflight_service, satisfaction)
+1689184204697:# Select columns:
+1689184204700:trainSet <- trainSet %>% select(Gender, Age, Type_of_Travel, Flight_Distance, Inflight_service, satisfaction)
+1689184206198:head(trainSet)
+1689184237438:# Define a list of classification methods
+1689184237441:methods <- c("Logistic Regression")
+1689184239146:# Initialize a list to store evaluation results
+1689184239149:eval_results <- list()
+1689184240990:# Iterate over each method
+1689184240993:for (method in methods) {
+1689184240993:cat("Running", method, "\n")
+1689184240994:# Train the model
+1689184240995:if (method == "Logistic Regression") {
+1689184240995:model <- ml_logistic_regression(trainSet, satisfaction ~ .)
+1689184240996:} else if (method == "Random Forest") {
+1689184240996:model <- ml_random_forest(trainSet, satisfaction ~ .)
+1689184240997:} else if (method == "Gradient-Boosted Trees") {
+1689184240997:model <- ml_gradient_boosted_trees(trainSet, satisfaction ~ .)
+1689184240998:} else {
+1689184240999:cat("Unsupported method:", method, "\n")
+1689184240999:next
+1689184241000:}
+1689184241000:# Evaluate the model and store the results
+1689184241001:predictions <- ml_predict(model, testSet)
+1689184241002:predictedLabels <- collect(select(predictions, prediction))
+1689184241002:trueLabels <- collect(select(testSet, satisfaction))
+1689184241003:accuracy <- sum(predictedLabels == trueLabels) / length(trueLabels)
+1689184241004:# precision <- precision(predictedLabels, trueLabels, positive = "label_value")
+1689184241005:# recall <- recall(predictedLabels, trueLabels, positive = "label_value")
+1689184241006:eval_results[[method]] <- list(
+1689184241007:accuracy = accuracy
+1689184241008:# precision = precision,
+1689184241009:# recall = recall
+1689184241010:)
+1689184241011:}
+1689184264469:# Print evaluation results
+1689184264472:for (method in methods) {
+1689184264472:cat("Evaluation results for", method, ":\n")
+1689184264473:print(eval_results[[method]])
+1689184264473:cat("\n")
+1689184264474:}
+1689184720919:head(trainSet)
+1689184937935:# Select columns:
+1689184937938:trainSet <- trainSet %>% select(Gender, Age, Type_of_Travel, Flight_Distance, Inflight_service, satisfaction)
+1689184939151:head(trainSet)
+1689184942281:trainSet$satisfaction <- ifelse(df$satisfaction == "satisfied", 1, 0)
+1689185047858:trainSet$satisfaction <- ifelse(trainSet$satisfaction == "satisfied", 1, 0)
+1689185050620:head(trainSet)
+1689185088174:# Select columns:
+1689185088177:trainSet <- trainSet %>% select(Gender, Age, Type_of_Travel, Flight_Distance, Inflight_service, satisfaction)
+1689185090623:head(trainSet)
+1689185093343:trainSet$satisfaction <- ifelse(trainSet$satisfaction == "satisfied", 1, 0)
+1689185094395:head(trainSet)
+1689185169656:spark_disconnect(sc)
+1689185174011:# Connect
+1689185174011:sc <- sparklyr::spark_connect(master = "local")
+1689185179300:datasetPath <- "/data/train.csv"
+1689185181440:trainSet <- spark_read_csv(sc, name = "train", path = datasetPath, header = TRUE, infer_schema = TRUE)
+1689185183419:trainSet <- na.omit(trainSet)
+1689185184508:datasetPath <- "/data/test.csv"
+1689185185276:testSet <- spark_read_csv(sc, name = "test", path = datasetPath, header = TRUE, infer_schema = TRUE)
+1689185186976:testSet <- na.omit(testSet)
+1689185211211:# Extract column names
+1689185211214:column_names <- colnames(trainSet)
+1689185213943:column_names
+1689185230665:# Select columns:
+1689185230668:trainFiltered <- trainSet %>% select(Gender, Age, Type_of_Travel, Flight_Distance, Inflight_service, satisfaction)
+1689185231683:head(trainFiltered)
+1689185244882:trainFiltered$satisfaction <- ifelse(trainFiltered$satisfaction == "satisfied", 1, 0)
+1689185246122:head(trainFiltered)
+1689185512155:head(trainFiltered)
+1689185520725:# Select columns:
+1689185520728:trainFiltered <- trainSet %>% select(Gender, Age, Type_of_Travel, Flight_Distance, Inflight_service, satisfaction)
+1689185531247:head(trainFiltered)
+1689185545524:trainFiltered$satisfaction <- ifelse(trainFiltered$satisfaction == "satisfied", 1, 0)
+1689185547043:head(trainFiltered)
+1689185704582:# Select columns:
+1689185704585:trainFiltered <- trainSet %>% select(Gender, Age, Type_of_Travel, Flight_Distance, Inflight_service, satisfaction)
+1689185706519:head(trainFiltered)
+1689185710184:trainFiltered$satisfaction <- mutate(parameterWaterBodyCategory = switch(satisfaction,
+1689185710211:"satisfied"=1,
+1689185710212:"neutral or dissatisfied"=0))
+1689185772977:trainFiltered <- trainFiltered %>% mutate(parameterWaterBodyCategory = switch(satisfaction,
+1689185772980:"satisfied"=1,
+1689185772981:"neutral or dissatisfied"=0))
+1689185774690:head(trainFiltered)
+1689185794480:# Select columns:
+1689185794481:trainFiltered <- trainSet %>% select(Gender, Age, Type_of_Travel, Flight_Distance, Inflight_service, satisfaction)
+1689185795360:head(trainFiltered)
+1689185796211:trainFiltered <- trainFiltered %>% mutate(satisfaction = switch(satisfaction,
+1689185796214:"satisfied"=1,
+1689185796215:"neutral or dissatisfied"=0))
+1689185797619:head(trainFiltered)
+1689185807083:# Define a list of classification methods
+1689185807086:methods <- c("Logistic Regression")
+1689185807999:# Initialize a list to store evaluation results
+1689185808002:eval_results <- list()
+1689186401704:# Select columns:
+1689186401707:trainFiltered <- trainSet %>% select(Gender, Age, Type_of_Travel, Flight_Distance, Inflight_service, satisfaction)
+1689186402557:head(trainFiltered)
+1689186404779:trainFiltered <- trainFiltered %>% mutate(satisfaction = switch(satisfaction,
+1689186404782:"satisfied"=1,
+1689186404783:"neutral or dissatisfied"=0))
+1689186410023:testFiltered <- testSet %>% select(Gender, Age, Type_of_Travel, Flight_Distance, Inflight_service, satisfaction)
+1689186411639:head(testFiltered)
+1689186413729:testFiltered <- testFiltered %>% mutate(satisfaction = switch(satisfaction,
+1689186413732:"satisfied"=1,
+1689186413732:"neutral or dissatisfied"=0))
+1689186415701:head(testFiltered)
+1689186423112:formula <- satisfaction ~ Gender + Age + Type_of_Travel + Flight_Distance + Inflight_service
+1689186424704:samples <- c(1:5)
+1689186426884:max.iterations <- samples * 5
+1689186428020:log.reg.weighted.precision <- samples
+1689186428930:log.reg.weighted.recall <- samples
+1689186429509:log.reg.weighted.f.measure <- samples
+1689186430095:log.reg.area.under.roc <- samples
+1689186430630:log.reg.accuracy <- samples
+1689186432377:for(i in samples){
+1689186432380:logreg <- ml_logistic_regression(trainFiltered,
+1689186432380:formula,
+1689186432381:max_iter = max.iterations[i],
+1689186432382:family = "binomial")
+1689186432382:evaluation <- ml_evaluate(logreg, dataset=testFiltered)
+1689186432383:log.reg.weighted.precision[i] <- evaluation$weighted_precision()
+1689186432383:log.reg.weighted.recall[i] <- evaluation$weighted_recall()
+1689186432384:log.reg.weighted.f.measure[i] <- evaluation$weighted_f_measure()
+1689186432385:log.reg.area.under.roc[i] <- evaluation$area_under_roc()
+1689186432385:log.reg.accuracy[i] <- evaluation$accuracy()
+1689186432386:}
+1689186755129:df <- data.frame(i=max.iterations,
+1689186755132:wp=log.reg.weighted.precision,
+1689186755133:wr=log.reg.weighted.recall,
+1689186755134:wf=log.reg.weighted.f.measure,
+1689186755134:aur=log.reg.area.under.roc,
+1689186755135:a=log.reg.accuracy)
+1689186756990:p1 <- df %>%
+1689186756992:ggplot(aes(i, wp, color=wp)) +
+1689186756993:geom_line(size=2) +
+1689186756994:scale_x_continuous(breaks=max.iterations) +
+1689186756994:scale_y_continuous(breaks=log.reg.weighted.precision) +
+1689186756995:scale_color_gradient(low = "#FF2266", high="#6622FF") +
+1689186756995:theme(text = element_text(size = 16)) +
+1689186756996:labs(x="Maksimalni broj iteracija", y="Preciznost", title = "a) Zavisnost preciznosti od maksimalnog broja iteracija")
+1689186785711:library(ggplot2)
+1689186799059:df <- data.frame(i=max.iterations,
+1689186799062:wp=log.reg.weighted.precision,
+1689186799063:wr=log.reg.weighted.recall,
+1689186799063:wf=log.reg.weighted.f.measure,
+1689186799064:aur=log.reg.area.under.roc,
+1689186799065:a=log.reg.accuracy)
+1689186800543:p1 <- df %>%
+1689186800546:ggplot(aes(i, wp, color=wp)) +
+1689186800547:geom_line(size=2) +
+1689186800547:scale_x_continuous(breaks=max.iterations) +
+1689186800548:scale_y_continuous(breaks=log.reg.weighted.precision) +
+1689186800549:scale_color_gradient(low = "#FF2266", high="#6622FF") +
+1689186800549:theme(text = element_text(size = 16)) +
+1689186800550:labs(x="Maksimalni broj iteracija", y="Preciznost", title = "a) Zavisnost preciznosti od maksimalnog broja iteracija")
+1689186802681:p2 <- df %>%
+1689186802681:ggplot(aes(i, wr, color=wr)) +
+1689186802682:geom_line(size=2) +
+1689186802683:scale_x_continuous(breaks=max.iterations) +
+1689186802683:scale_y_continuous(breaks=log.reg.weighted.recall) +
+1689186802684:scale_color_gradient(low = "#6622FF", high="#FF2266") +
+1689186802684:theme(text = element_text(size = 16)) +
+1689186802685:labs(x="Maksimalni broj iteracija", y="Osetljivost", title = "b) Zavisnost osetljivosti od maksimalnog broja iteracija")
+1689186803663:p3 <- df %>%
+1689186803664:ggplot(aes(i, wf, color=wf)) +
+1689186803665:geom_line(size=2) +
+1689186803665:scale_x_continuous(breaks=max.iterations) +
+1689186803666:scale_y_continuous(breaks=log.reg.weighted.f.measure) +
+1689186803667:scale_color_gradient(low = "#FF2266", high="#6622FF") +
+1689186803668:theme(text = element_text(size = 16)) +
+1689186803668:labs(x="Maksimalni broj iteracija", y="F1", title = "c) Zavisnost F1 mere od maksimalnog broja iteracija")
+1689186804474:p4 <- df %>%
+1689186804477:ggplot(aes(i, aur, color=aur)) +
+1689186804478:geom_line(size=2) +
+1689186804478:scale_x_continuous(breaks=max.iterations) +
+1689186804479:scale_y_continuous(breaks=log.reg.area.under.roc) +
+1689186804479:scale_color_gradient(low = "#6622FF", high="#FF2266") +
+1689186804480:theme(text = element_text(size = 16)) +
+1689186804480:labs(x="Mkaismalni broj iteracija", y="Površina ispod ROC krive", title = "d) Zavisnost površine ispod ROC krive od maksimalnog broja iteracija")
+1689186805534:plot_grid(p1, p2, p3, p4, nrow=2, ncol=2)
+1689186842419:library(cowplot)
+1689186874240:library(cowplot)
+1689186942319:install.packages("gridExtra", repos="https://cran.rstudio.com/")
+1689186992555:p1
+1689187009004:library(cowplot)
+1689187020268:plot_grid(p1, p2, p3, p4, nrow=2, ncol=2)
+1689187030971:library(ggplot2)
+1689187036374:plot_grid(p1, p2, p3, p4, nrow=2, ncol=2)
+1689187352756:p2
+1689187355127:p3
+1689187358689:p4
+1689187394270:p1
+1689187401587:p2
+1689187403205:p3
+1689187404402:p4
+1689187442170:p1
+1689187658347:for(i in samples){
+1689187658348:logreg <- ml_logistic_regression(trainFiltered,
+1689187658349:formula,
+1689187658349:max_iter = max.iterations[1],
+1689187658350:family = "binomial")
+1689187658351:evaluation <- ml_evaluate(logreg, dataset=testFiltered)
+1689187658351:log.reg.weighted.precision[i] <- evaluation$weighted_precision()
+1689187658352:log.reg.weighted.recall[i] <- evaluation$weighted_recall()
+1689187658352:log.reg.weighted.f.measure[i] <- evaluation$weighted_f_measure()
+1689187658353:log.reg.area.under.roc[i] <- evaluation$area_under_roc()
+1689187658354:log.reg.accuracy[i] <- evaluation$accuracy()
+1689187658354:}
+1689187674595:df <- data.frame(i=max.iterations,
+1689187674596:wp=log.reg.weighted.precision,
+1689187674597:wr=log.reg.weighted.recall,
+1689187674597:wf=log.reg.weighted.f.measure,
+1689187674598:aur=log.reg.area.under.roc,
+1689187674599:a=log.reg.accuracy)
+1689187674601:p1 <- df %>%
+1689187674602:ggplot(aes(i, wp, color=wp)) +
+1689187674603:geom_line(size=2) +
+1689187674603:scale_x_continuous(breaks=max.iterations) +
+1689187674604:scale_y_continuous(breaks=log.reg.weighted.precision) +
+1689187674605:scale_color_gradient(low = "#FF2266", high="#6622FF") +
+1689187674605:theme(text = element_text(size = 16)) +
+1689187674606:labs(x="Maksimalni broj iteracija", y="Preciznost", title = "a) Zavisnost preciznosti od maksimalnog broja iteracija")
+1689187674619:p1
+1689187689854:logreg <- ml_logistic_regression(trainFiltered,
+1689187689881:formula,
+1689187689882:max_iter = max.iterations[5],
+1689187689882:family = "binomial")
+1689187702438:df <- data.frame(i=max.iterations,
+1689187702439:wp=log.reg.weighted.precision,
+1689187702439:wr=log.reg.weighted.recall,
+1689187702440:wf=log.reg.weighted.f.measure,
+1689187702441:aur=log.reg.area.under.roc,
+1689187702441:a=log.reg.accuracy)
+1689187703680:p1 <- df %>%
+1689187703683:ggplot(aes(i, wp, color=wp)) +
+1689187703684:geom_line(size=2) +
+1689187703684:scale_x_continuous(breaks=max.iterations) +
+1689187703685:scale_y_continuous(breaks=log.reg.weighted.precision) +
+1689187703686:scale_color_gradient(low = "#FF2266", high="#6622FF") +
+1689187703686:theme(text = element_text(size = 16)) +
+1689187703687:labs(x="Maksimalni broj iteracija", y="Preciznost", title = "a) Zavisnost preciznosti od maksimalnog broja iteracija")
+1689187706958:p2 <- df %>%
+1689187706961:ggplot(aes(i, wr, color=wr)) +
+1689187706961:geom_line(size=2) +
+1689187706962:scale_x_continuous(breaks=max.iterations) +
+1689187706962:scale_y_continuous(breaks=log.reg.weighted.recall) +
+1689187706963:scale_color_gradient(low = "#6622FF", high="#FF2266") +
+1689187706964:theme(text = element_text(size = 16)) +
+1689187706964:labs(x="Maksimalni broj iteracija", y="Osetljivost", title = "b) Zavisnost osetljivosti od maksimalnog broja iteracija")
+1689187707484:p3 <- df %>%
+1689187707487:ggplot(aes(i, wf, color=wf)) +
+1689187707487:geom_line(size=2) +
+1689187707488:scale_x_continuous(breaks=max.iterations) +
+1689187707488:scale_y_continuous(breaks=log.reg.weighted.f.measure) +
+1689187707489:scale_color_gradient(low = "#FF2266", high="#6622FF") +
+1689187707489:theme(text = element_text(size = 16)) +
+1689187707490:labs(x="Maksimalni broj iteracija", y="F1", title = "c) Zavisnost F1 mere od maksimalnog broja iteracija")
+1689187708080:p4 <- df %>%
+1689187708083:ggplot(aes(i, aur, color=aur)) +
+1689187708084:geom_line(size=2) +
+1689187708084:scale_x_continuous(breaks=max.iterations) +
+1689187708085:scale_y_continuous(breaks=log.reg.area.under.roc) +
+1689187708086:scale_color_gradient(low = "#6622FF", high="#FF2266") +
+1689187708086:theme(text = element_text(size = 16)) +
+1689187708087:labs(x="Mkaismalni broj iteracija", y="Površina ispod ROC krive", title = "d) Zavisnost površine ispod ROC krive od maksimalnog broja iteracija")
+1689187712025:p1
+1689187742595:max.iterations <- samples * 5
+1689187743094:log.reg.weighted.precision <- samples
+1689187743413:log.reg.weighted.recall <- samples
+1689187743660:log.reg.weighted.f.measure <- samples
+1689187743978:log.reg.area.under.roc <- samples
+1689187744378:log.reg.accuracy <- samples
+1689187753088:logreg <- ml_logistic_regression(trainFiltered,
+1689187753091:formula,
+1689187753091:max_iter = max.iterations[25],
+1689187753092:family = "binomial")
+1689187761070:logreg <- ml_logistic_regression(trainFiltered,
+1689187761071:formula,
+1689187761072:max_iter = max.iterations[5],
+1689187761072:family = "binomial")
+1689187768429:df <- data.frame(i=max.iterations,
+1689187768433:wp=log.reg.weighted.precision,
+1689187768433:wr=log.reg.weighted.recall,
+1689187768434:wf=log.reg.weighted.f.measure,
+1689187768434:aur=log.reg.area.under.roc,
+1689187768435:a=log.reg.accuracy)
+1689187769959:p1 <- df %>%
+1689187769962:ggplot(aes(i, wp, color=wp)) +
+1689187769962:geom_line(size=2) +
+1689187769963:scale_x_continuous(breaks=max.iterations) +
+1689187769963:scale_y_continuous(breaks=log.reg.weighted.precision) +
+1689187769964:scale_color_gradient(low = "#FF2266", high="#6622FF") +
+1689187769964:theme(text = element_text(size = 16)) +
+1689187769965:labs(x="Maksimalni broj iteracija", y="Preciznost", title = "a) Zavisnost preciznosti od maksimalnog broja iteracija")
+1689187775466:p1
+1689187787473:formula <- satisfaction ~ Gender + Age + Type_of_Travel + Flight_Distance + Inflight_service
+1689187799392:samples <- c(1:5)
+1689187800991:max.iterations <- samples * 5
+1689187801239:log.reg.weighted.precision <- samples
+1689187801442:log.reg.weighted.recall <- samples
+1689187801616:log.reg.weighted.f.measure <- samples
+1689187801801:log.reg.area.under.roc <- samples
+1689187802421:log.reg.accuracy <- samples
+1689187880270:head(testFiltered)
+1689187888054:formula <- satisfaction ~ Gender + Age + Type_of_Travel + Flight_Distance + Inflight_service
+1689187888695:samples <- c(1:5)
+1689187889230:max.iterations <- samples * 5
+1689187889431:log.reg.weighted.precision <- samples
+1689187889588:log.reg.weighted.recall <- samples
+1689187889771:log.reg.weighted.f.measure <- samples
+1689187889974:log.reg.area.under.roc <- samples
+1689187890705:log.reg.accuracy <- samples
+1689187893432:for(i in samples){
+1689187893435:logreg <- ml_logistic_regression(trainFiltered,
+1689187893436:formula,
+1689187893437:max_iter = max.iterations[i],
+1689187893437:family = "binomial")
+1689187893438:evaluation <- ml_evaluate(logreg, dataset=testFiltered)
+1689187893439:log.reg.weighted.precision[i] <- evaluation$weighted_precision()
+1689187893440:log.reg.weighted.recall[i] <- evaluation$weighted_recall()
+1689187893441:log.reg.weighted.f.measure[i] <- evaluation$weighted_f_measure()
+1689187893442:log.reg.area.under.roc[i] <- evaluation$area_under_roc()
+1689187893443:log.reg.accuracy[i] <- evaluation$accuracy()
+1689187893444:}
+1689187910574:df <- data.frame(i=max.iterations,
+1689187910575:wp=log.reg.weighted.precision,
+1689187910575:wr=log.reg.weighted.recall,
+1689187910576:wf=log.reg.weighted.f.measure,
+1689187910576:aur=log.reg.area.under.roc,
+1689187910577:a=log.reg.accuracy)
+1689187910578:p1 <- df %>%
+1689187910579:ggplot(aes(i, wp, color=wp)) +
+1689187910580:geom_line(size=2) +
+1689187910580:scale_x_continuous(breaks=max.iterations) +
+1689187910580:scale_y_continuous(breaks=log.reg.weighted.precision) +
+1689187910581:scale_color_gradient(low = "#FF2266", high="#6622FF") +
+1689187910581:theme(text = element_text(size = 16)) +
+1689187910582:labs(x="Maksimalni broj iteracija", y="Preciznost", title = "a) Zavisnost preciznosti od maksimalnog broja iteracija")
+1689187910587:p2 <- df %>%
+1689187910588:ggplot(aes(i, wr, color=wr)) +
+1689187910588:geom_line(size=2) +
+1689187910588:scale_x_continuous(breaks=max.iterations) +
+1689187910588:scale_y_continuous(breaks=log.reg.weighted.recall) +
+1689187910589:scale_color_gradient(low = "#6622FF", high="#FF2266") +
+1689187910589:theme(text = element_text(size = 16)) +
+1689187910589:labs(x="Maksimalni broj iteracija", y="Osetljivost", title = "b) Zavisnost osetljivosti od maksimalnog broja iteracija")
+1689187910595:p3 <- df %>%
+1689187910595:ggplot(aes(i, wf, color=wf)) +
+1689187910595:geom_line(size=2) +
+1689187910596:scale_x_continuous(breaks=max.iterations) +
+1689187910596:scale_y_continuous(breaks=log.reg.weighted.f.measure) +
+1689187910596:scale_color_gradient(low = "#FF2266", high="#6622FF") +
+1689187910596:theme(text = element_text(size = 16)) +
+1689187910597:labs(x="Maksimalni broj iteracija", y="F1", title = "c) Zavisnost F1 mere od maksimalnog broja iteracija")
+1689187910602:p4 <- df %>%
+1689187910602:ggplot(aes(i, aur, color=aur)) +
+1689187910603:geom_line(size=2) +
+1689187910603:scale_x_continuous(breaks=max.iterations) +
+1689187910603:scale_y_continuous(breaks=log.reg.area.under.roc) +
+1689187910604:scale_color_gradient(low = "#6622FF", high="#FF2266") +
+1689187910604:theme(text = element_text(size = 16)) +
+1689187910604:labs(x="Mkaismalni broj iteracija", y="Površina ispod ROC krive", title = "d) Zavisnost površine ispod ROC krive od maksimalnog broja iteracija")
+1689187910609:p1
+1689187916008:p2
+1689187918674:p3
+1689187920133:p4
+1689187983373:formula <- satisfaction ~ Gender + Age + Type_of_Travel + Flight_Distance + Inflight_service
+1689187983806:samples <- c(1:3)
+1689187984080:max.iterations <- samples * 5
+1689187984264:log.reg.weighted.precision <- samples
+1689187984421:log.reg.weighted.recall <- samples
+1689187984551:log.reg.weighted.f.measure <- samples
+1689187984708:log.reg.area.under.roc <- samples
+1689187985395:log.reg.accuracy <- samples
+1689187986559:for(i in samples){
+1689187986560:logreg <- ml_logistic_regression(trainFiltered,
+1689187986561:formula,
+1689187986562:max_iter = max.iterations[i],
+1689187986562:family = "binomial")
+1689187986563:evaluation <- ml_evaluate(logreg, dataset=testFiltered)
+1689187986564:log.reg.weighted.precision[i] <- evaluation$weighted_precision()
+1689187986564:log.reg.weighted.recall[i] <- evaluation$weighted_recall()
+1689187986565:log.reg.weighted.f.measure[i] <- evaluation$weighted_f_measure()
+1689187986566:log.reg.area.under.roc[i] <- evaluation$area_under_roc()
+1689187986566:log.reg.accuracy[i] <- evaluation$accuracy()
+1689187986567:}
+1689188000157:df <- data.frame(i=max.iterations,
+1689188000160:wp=log.reg.weighted.precision,
+1689188000160:wr=log.reg.weighted.recall,
+1689188000161:wf=log.reg.weighted.f.measure,
+1689188000162:aur=log.reg.area.under.roc,
+1689188000162:a=log.reg.accuracy)
+1689188001184:p1 <- df %>%
+1689188001185:ggplot(aes(i, wp, color=wp)) +
+1689188001185:geom_line(size=2) +
+1689188001186:scale_x_continuous(breaks=max.iterations) +
+1689188001186:scale_y_continuous(breaks=log.reg.weighted.precision) +
+1689188001187:scale_color_gradient(low = "#FF2266", high="#6622FF") +
+1689188001187:theme(text = element_text(size = 16)) +
+1689188001188:labs(x="Maksimalni broj iteracija", y="Preciznost", title = "a) Zavisnost preciznosti od maksimalnog broja iteracija")
+1689188001816:p2 <- df %>%
+1689188001819:ggplot(aes(i, wr, color=wr)) +
+1689188001820:geom_line(size=2) +
+1689188001820:scale_x_continuous(breaks=max.iterations) +
+1689188001821:scale_y_continuous(breaks=log.reg.weighted.recall) +
+1689188001821:scale_color_gradient(low = "#6622FF", high="#FF2266") +
+1689188001822:theme(text = element_text(size = 16)) +
+1689188001823:labs(x="Maksimalni broj iteracija", y="Osetljivost", title = "b) Zavisnost osetljivosti od maksimalnog broja iteracija")
+1689188002350:p3 <- df %>%
+1689188002353:ggplot(aes(i, wf, color=wf)) +
+1689188002354:geom_line(size=2) +
+1689188002354:scale_x_continuous(breaks=max.iterations) +
+1689188002355:scale_y_continuous(breaks=log.reg.weighted.f.measure) +
+1689188002355:scale_color_gradient(low = "#FF2266", high="#6622FF") +
+1689188002356:theme(text = element_text(size = 16)) +
+1689188002357:labs(x="Maksimalni broj iteracija", y="F1", title = "c) Zavisnost F1 mere od maksimalnog broja iteracija")
+1689188002860:p4 <- df %>%
+1689188002863:ggplot(aes(i, aur, color=aur)) +
+1689188002864:geom_line(size=2) +
+1689188002864:scale_x_continuous(breaks=max.iterations) +
+1689188002865:scale_y_continuous(breaks=log.reg.area.under.roc) +
+1689188002866:scale_color_gradient(low = "#6622FF", high="#FF2266") +
+1689188002866:theme(text = element_text(size = 16)) +
+1689188002867:labs(x="Mkaismalni broj iteracija", y="Površina ispod ROC krive", title = "d) Zavisnost površine ispod ROC krive od maksimalnog broja iteracija")
+1689188004837:p1
+1689189527452:p2
+1689189534939:p3
+1689189537175:p4
+1689189539962:p1
+1689189541125:p2
+1689189542448:p3
+1689189591363:p3 <- df %>%
+1689189591390:ggplot(aes(i, wf, color=wf)) +
+1689189591391:geom_line(size=2) +
+1689189591391:scale_x_continuous(breaks=max.iterations) +
+1689189591392:scale_y_continuous(breaks=log.reg.accuracy) +
+1689189591392:scale_color_gradient(low = "#FF2266", high="#6622FF") +
+1689189591392:theme(text = element_text(size = 16)) +
+1689189591393:labs(x="Maksimalni broj iteracija", y="F1", title = "c) Zavisnost F1 mere od maksimalnog broja iteracija")
+1689189594775:p3
+1689189643456:p1 <- df %>%
+1689189643459:ggplot(aes(i, wp, color=wp)) +
+1689189643460:geom_line(size=2) +
+1689189643461:scale_x_continuous(breaks=max.iterations) +
+1689189643462:scale_y_continuous(breaks=log.reg.weighted.precision) +
+1689189643463:theme(text = element_text(size = 16)) +
+1689189643464:labs(x="Maksimalni broj iteracija", y="Preciznost", title = "a) Zavisnost preciznosti od maksimalnog broja iteracija")
+1689189646304:p1
+1689189693404:p3 <- df %>%
+1689189693407:ggplot(aes(i, a, color=wf)) +
+1689189693407:geom_line(size=2) +
+1689189693408:scale_x_continuous(breaks=max.iterations) +
+1689189693408:scale_y_continuous(breaks=log.reg.accuracy) +
+1689189693409:theme(text = element_text(size = 16)) +
+1689189693410:labs(x="Maksimalni broj iteracija", y="F1", title = "c) Zavisnost F1 mere od maksimalnog broja iteracija")
+1689189695729:p3
+1689189716551:formula <- satisfaction ~ Gender + Age + Type_of_Travel + Flight_Distance + Inflight_service
+1689189717075:samples <- c(1:10)
+1689189717485:max_iterations <- samples * 5
+1689189717797:log.reg.weighted.precision <- samples
+1689189718067:log.reg.weighted.recall <- samples
+1689189718314:log.reg.weighted.f.measure <- samples
+1689189718589:log.reg.area.under.roc <- samples
+1689189719266:log.reg.accuracy <- samples
+1689189720126:for(i in samples){
+1689189720129:logreg <- ml_logistic_regression(trainFiltered,
+1689189720129:formula,
+1689189720130:max_iter = max_iterations[i],
+1689189720131:family = "binomial")
+1689189720131:evaluation <- ml_evaluate(logreg, dataset=testFiltered)
+1689189720132:log.reg.weighted.precision[i] <- evaluation$weighted_precision()
+1689189720132:log.reg.weighted.recall[i] <- evaluation$weighted_recall()
+1689189720133:log.reg.weighted.f.measure[i] <- evaluation$weighted_f_measure()
+1689189720134:log.reg.area.under.roc[i] <- evaluation$area_under_roc()
+1689189720134:log.reg.accuracy[i] <- evaluation$accuracy()
+1689189720135:}
+1689189753512:df <- data.frame(i=max.iterations,
+1689189753513:wp=log.reg.weighted.precision,
+1689189753513:wr=log.reg.weighted.recall,
+1689189753514:wf=log.reg.weighted.f.measure,
+1689189753515:aur=log.reg.area.under.roc,
+1689189753516:a=log.reg.accuracy)
+1689189753518:p1 <- df %>%
+1689189753519:ggplot(aes(i, wp, color=wp)) +
+1689189753520:geom_line(size=2) +
+1689189753520:scale_x_continuous(breaks=max.iterations) +
+1689189753521:scale_y_continuous(breaks=log.reg.weighted.precision) +
+1689189753522:theme(text = element_text(size = 16)) +
+1689189753523:labs(x="Maksimalni broj iteracija", y="Preciznost", title = "a) Zavisnost preciznosti od maksimalnog broja iteracija")
+1689189753533:p2 <- df %>%
+1689189753534:ggplot(aes(i, wr, color=wr)) +
+1689189753535:geom_line(size=2) +
+1689189753535:scale_x_continuous(breaks=max.iterations) +
+1689189753536:scale_y_continuous(breaks=log.reg.weighted.recall) +
+1689189753537:theme(text = element_text(size = 16)) +
+1689189753538:labs(x="Maksimalni broj iteracija", y="Osetljivost", title = "b) Zavisnost osetljivosti od maksimalnog broja iteracija")
+1689189753548:p3 <- df %>%
+1689189753549:ggplot(aes(i, a, color=wf)) +
+1689189753550:geom_line(size=2) +
+1689189753550:scale_x_continuous(breaks=max.iterations) +
+1689189753551:scale_y_continuous(breaks=log.reg.accuracy) +
+1689189753552:theme(text = element_text(size = 16)) +
+1689189753553:labs(x="Maksimalni broj iteracija", y="F1", title = "c) Zavisnost F1 mere od maksimalnog broja iteracija")
+1689189753563:p4 <- df %>%
+1689189753564:ggplot(aes(i, aur, color=aur)) +
+1689189753564:geom_line(size=2) +
+1689189753565:scale_x_continuous(breaks=max.iterations) +
+1689189753566:scale_y_continuous(breaks=log.reg.area.under.roc) +
+1689189753567:theme(text = element_text(size = 16)) +
+1689189753568:labs(x="Mkaismalni broj iteracija", y="Površina ispod ROC krive", title = "d) Zavisnost površine ispod ROC krive od maksimalnog broja iteracija")
+1689189791636:p1
+1689189802780:df <- data.frame(i=max.iterations,
+1689189802783:wp=log.reg.weighted.precision,
+1689189802783:wr=log.reg.weighted.recall,
+1689189802784:wf=log.reg.weighted.f.measure,
+1689189802785:aur=log.reg.area.under.roc,
+1689189802785:a=log.reg.accuracy)
+1689189846692:# Select columns:
+1689189846693:trainFiltered <- trainSet %>% select(Gender, Age, Type_of_Travel, Flight_Distance, Inflight_service, satisfaction)
+1689189847793:head(trainFiltered)
+1689189849451:trainFiltered <- trainFiltered %>% mutate(satisfaction = switch(satisfaction,
+1689189849454:"satisfied"=1,
+1689189849455:"neutral or dissatisfied"=0))
+1689189850833:testFiltered <- testSet %>% select(Gender, Age, Type_of_Travel, Flight_Distance, Inflight_service, satisfaction)
+1689189851286:head(testFiltered)
+1689189853105:testFiltered <- testFiltered %>% mutate(satisfaction = switch(satisfaction,
+1689189853108:"satisfied"=1,
+1689189853108:"neutral or dissatisfied"=0))
+1689189853941:head(testFiltered)
+1689189855810:formula <- satisfaction ~ Gender + Age + Type_of_Travel + Flight_Distance + Inflight_service
+1689189856344:samples <- c(1:10)
+1689189857338:max_iterations <- samples * 5
+1689189857761:log.reg.weighted.precision <- samples
+1689189858071:log.reg.weighted.recall <- samples
+1689189858337:log.reg.weighted.f.measure <- samples
+1689189858628:log.reg.area.under.roc <- samples
+1689189858982:log.reg.accuracy <- samples
+1689189859986:for(i in samples){
+1689189859989:logreg <- ml_logistic_regression(trainFiltered,
+1689189859990:formula,
+1689189859990:max_iter = max_iterations[i],
+1689189859991:family = "binomial")
+1689189859991:evaluation <- ml_evaluate(logreg, dataset=testFiltered)
+1689189859992:log.reg.weighted.precision[i] <- evaluation$weighted_precision()
+1689189859993:log.reg.weighted.recall[i] <- evaluation$weighted_recall()
+1689189859993:log.reg.weighted.f.measure[i] <- evaluation$weighted_f_measure()
+1689189859994:log.reg.area.under.roc[i] <- evaluation$area_under_roc()
+1689189859995:log.reg.accuracy[i] <- evaluation$accuracy()
+1689189859995:}
+1689189908149:df <- data.frame(i=max_iterations,
+1689189908152:wp=log.reg.weighted.precision,
+1689189908153:wr=log.reg.weighted.recall,
+1689189908154:wf=log.reg.weighted.f.measure,
+1689189908155:aur=log.reg.area.under.roc,
+1689189908155:a=log.reg.accuracy)
+1689189909776:p1 <- df %>%
+1689189909780:ggplot(aes(i, wp, color=wp)) +
+1689189909780:geom_line(size=2) +
+1689189909781:scale_x_continuous(breaks=max_iterations) +
+1689189909782:scale_y_continuous(breaks=log.reg.weighted.precision) +
+1689189909783:theme(text = element_text(size = 16)) +
+1689189909783:labs(x="Maksimalni broj iteracija", y="Preciznost", title = "a) Zavisnost preciznosti od maksimalnog broja iteracija")
+1689189910973:p2 <- df %>%
+1689189910976:ggplot(aes(i, wr, color=wr)) +
+1689189910977:geom_line(size=2) +
+1689189910978:scale_x_continuous(breaks=max_iterations) +
+1689189910978:scale_y_continuous(breaks=log.reg.weighted.recall) +
+1689189910979:theme(text = element_text(size = 16)) +
+1689189910980:labs(x="Maksimalni broj iteracija", y="Osetljivost", title = "b) Zavisnost osetljivosti od maksimalnog broja iteracija")
+1689189911689:p3 <- df %>%
+1689189911690:ggplot(aes(i, a, color=wf)) +
+1689189911690:geom_line(size=2) +
+1689189911691:scale_x_continuous(breaks=max_iterations) +
+1689189911691:scale_y_continuous(breaks=log.reg.accuracy) +
+1689189911692:theme(text = element_text(size = 16)) +
+1689189911693:labs(x="Maksimalni broj iteracija", y="F1", title = "c) Zavisnost F1 mere od maksimalnog broja iteracija")
+1689189912740:p4 <- df %>%
+1689189912741:ggplot(aes(i, aur, color=aur)) +
+1689189912741:geom_line(size=2) +
+1689189912742:scale_x_continuous(breaks=max_iterations) +
+1689189912743:scale_y_continuous(breaks=log.reg.area.under.roc) +
+1689189912743:theme(text = element_text(size = 16)) +
+1689189912744:labs(x="Mkaismalni broj iteracija", y="Površina ispod ROC krive", title = "d) Zavisnost površine ispod ROC krive od maksimalnog broja iteracija")
+1689189913736:p1
+1689189922631:p2
+1689189924500:p3
+1689189926547:p4
+1689189949856:p3
+1689190013150:formula <- satisfaction ~ Gender + Age + Type_of_Travel + Flight_Distance + Inflight_service
+1689190013486:samples <- c(1:3)
+1689190013769:max_iterations <- samples * 6
+1689190013945:log.reg.weighted.precision <- samples
+1689190014118:log.reg.weighted.recall <- samples
+1689190014277:log.reg.weighted.f.measure <- samples
+1689190014452:log.reg.area.under.roc <- samples
+1689190015417:log.reg.accuracy <- samples
+1689190016589:for(i in samples){
+1689190016590:logreg <- ml_logistic_regression(trainFiltered,
+1689190016590:formula,
+1689190016591:max_iter = max_iterations[i],
+1689190016592:family = "binomial")
+1689190016593:evaluation <- ml_evaluate(logreg, dataset=testFiltered)
+1689190016593:log.reg.weighted.precision[i] <- evaluation$weighted_precision()
+1689190016594:log.reg.weighted.recall[i] <- evaluation$weighted_recall()
+1689190016594:log.reg.weighted.f.measure[i] <- evaluation$weighted_f_measure()
+1689190016595:log.reg.area.under.roc[i] <- evaluation$area_under_roc()
+1689190016596:log.reg.accuracy[i] <- evaluation$accuracy()
+1689190016596:}
+1689190028899:df <- data.frame(i=max_iterations,
+1689190028902:wp=log.reg.weighted.precision,
+1689190028903:wr=log.reg.weighted.recall,
+1689190028903:wf=log.reg.weighted.f.measure,
+1689190028904:aur=log.reg.area.under.roc,
+1689190028905:a=log.reg.accuracy)
+1689190030760:p1 <- df %>%
+1689190030763:ggplot(aes(i, wp, color=wp)) +
+1689190030764:geom_line(size=2) +
+1689190030764:scale_x_continuous(breaks=max_iterations) +
+1689190030765:scale_y_continuous(breaks=log.reg.weighted.precision) +
+1689190030765:theme(text = element_text(size = 16)) +
+1689190030766:labs(x="Maksimalni broj iteracija", y="Preciznost", title = "a) Zavisnost preciznosti od maksimalnog broja iteracija")
+1689190031661:p2 <- df %>%
+1689190031664:ggplot(aes(i, wr, color=wr)) +
+1689190031665:geom_line(size=2) +
+1689190031666:scale_x_continuous(breaks=max_iterations) +
+1689190031667:scale_y_continuous(breaks=log.reg.weighted.recall) +
+1689190031667:theme(text = element_text(size = 16)) +
+1689190031668:labs(x="Maksimalni broj iteracija", y="Osetljivost", title = "b) Zavisnost osetljivosti od maksimalnog broja iteracija")
+1689190032275:p3 <- df %>%
+1689190032278:ggplot(aes(i, a, color=wf)) +
+1689190032278:geom_line(size=2) +
+1689190032279:scale_x_continuous(breaks=max_iterations) +
+1689190032280:scale_y_continuous(breaks=log.reg.accuracy) +
+1689190032281:theme(text = element_text(size = 16)) +
+1689190032281:labs(x="Maksimalni broj iteracija", y="F1", title = "c) Zavisnost F1 mere od maksimalnog broja iteracija")
+1689190032890:p4 <- df %>%
+1689190032894:ggplot(aes(i, aur, color=aur)) +
+1689190032894:geom_line(size=2) +
+1689190032895:scale_x_continuous(breaks=max_iterations) +
+1689190032896:scale_y_continuous(breaks=log.reg.area.under.roc) +
+1689190032897:theme(text = element_text(size = 16)) +
+1689190032897:labs(x="Mkaismalni broj iteracija", y="Površina ispod ROC krive", title = "d) Zavisnost površine ispod ROC krive od maksimalnog broja iteracija")
+1689190034405:p1
+1689190037867:p2
+1689190039191:p3
+1689190040970:p4
+1689190046455:p1
+1689190047724:p2
+1689190048938:p3
+1689190050271:p4
+1689190060758:p3
