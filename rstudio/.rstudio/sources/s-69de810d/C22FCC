@@ -7,14 +7,14 @@
     "folds" : "",
     "hash" : "0",
     "id" : "C22FCC",
-    "lastKnownWriteTime" : 1689203325,
-    "last_content_update" : 1689203325388,
+    "lastKnownWriteTime" : 1689206316,
+    "last_content_update" : 1689206316652,
     "path" : "~/script.r",
     "project_path" : null,
     "properties" : {
-        "cursorPosition" : "170,0",
+        "cursorPosition" : "203,2",
         "notebook_format" : "html_document",
-        "scrollLine" : "156",
+        "scrollLine" : "190",
         "tempName" : "Untitled1"
     },
     "read_only" : false,

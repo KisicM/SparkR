@@ -2221,3 +2221,145 @@
 1689203596205:dt_accuracy=dt_accuracy,
 1689203596205:dt_k_cross_fold_accuracy=dt_k_cross_fold_accuracy)
 1689203597657:print(df)
+1689204547847:#3
+1689204547848:df_clusterization <- trainSet %>% select(Flight_Distance, Inflight_service, Cleanliness, Class)
+1689204548843:print(df_clusterization)
+1689204609930:# New Formula
+1689204609933:cluster_formula <- Class ~ Flight_Distance + Inflight_service + Cleanliness
+1689204662187:#3
+1689204662188:df_clusterization <- trainSet %>% select(Flight_Distance, Inflight_service, Cleanliness, Class)
+1689204663300:print(df_clusterization)
+1689204665673:# New Formula
+1689204665674:cluster_formula <- Class ~ Flight_Distance + Inflight_service + Cleanliness
+1689204667678:# K-means 5
+1689204667681:model <- ml_kmeans(df_clusterization, cluster_formula, seed = 1, k = 3)
+1689204801557:cplot_5 <- model$centers %>%
+1689204801584:ggplot(aes(Flight_Distance, Inflight_service, Cleanliness, color=Cleanliness)) +
+1689204801585:geom_point(size=5) +
+1689204801585:scale_color_gradientn(colors = rainbow(10)) +
+1689204801586:theme(text = element_text(size=16)) +
+1689204801587:labs(x="diameter", y="Eccentricity (shape)", title = "a) K=5-means")
+1689204806314:# Plotin'
+1689204806341:cplot_5
+1689205005837:# K-means 5
+1689205005840:model_3 <- ml_kmeans(df_clusterization, cluster_formula, seed = 1, k = 3)
+1689205096297:p1 <- model_3$centers %>%
+1689205096298:ggplot(aes(Flight_Distance, Inflight_service, Cleanliness, color=Cleanliness)) +
+1689205096299:geom_point(size=5) +
+1689205096300:theme(text = element_text(size=16)) +
+1689205096301:labs(x="Flight distance", y="Eccentricity (shape)", title = "K=3")
+1689205116015:p1
+1689205247843:p1 <- model_3$centers %>%
+1689205247845:ggplot(aes(Flight_Distance, Inflight_service, Cleanliness, color=Inflight_service)) +
+1689205247846:geom_point(size=5) +
+1689205247847:theme(text = element_text(size=16)) +
+1689205247847:labs(x="Flight distance", y="Inflight service", z="Cleanliness" title = "K=3")
+1689205267230:p1 <- model_3$centers %>%
+1689205267230:ggplot(aes(Flight_Distance, Inflight_service, Cleanliness, color=Inflight_service)) +
+1689205267231:geom_point(size=5) +
+1689205267231:theme(text = element_text(size=16)) +
+1689205267232:labs(x="Flight distance", y="Inflight service", z="Cleanliness", title = "K=3")
+1689205271997:p1
+1689205302998:#3
+1689205302998:df_clusterization <- trainSet %>% select(Flight_Distance, Inflight_service, Class)
+1689205306632:print(df_clusterization)
+1689205334547:# K-means 5
+1689205334550:model_3 <- ml_kmeans(df_clusterization, cluster_formula, seed = 1, k = 3)
+1689205343928:# New Formula
+1689205343932:cluster_formula <- Class ~ Flight_Distance + Inflight_service
+1689205345034:# K-means 5
+1689205345034:model_3 <- ml_kmeans(df_clusterization, cluster_formula, seed = 1, k = 3)
+1689205352517:p1 <- model_3$centers %>%
+1689205352520:ggplot(aes(Flight_Distance, Inflight_service, Cleanliness, color=Inflight_service)) +
+1689205352521:geom_point(size=5) +
+1689205352521:theme(text = element_text(size=16)) +
+1689205352522:labs(x="Flight distance", y="Inflight service", z="Cleanliness", title = "K=3")
+1689205370040:p1 <- model_3$centers %>%
+1689205370043:ggplot(aes(Flight_Distance, Inflight_service, Cleanliness, color=Inflight_service)) +
+1689205370044:geom_point(size=5) +
+1689205370044:theme(text = element_text(size=16)) +
+1689205370045:labs(x="Flight distance", y="Inflight service", title = "K=3")
+1689205373321:p1
+1689205462826:model_5 <- ml_kmeans(df_clusterization, cluster_formula, seed = 1, k = 5)
+1689205543091:source('~/script.r')
+1689205571559:model_5 <- ml_kmeans(df_clusterization, cluster_formula, seed = 1, k = 5)
+1689205584799:p2 <- model_5$centers %>%
+1689205584826:ggplot(aes(Flight_Distance, Inflight_service, Cleanliness, color=Inflight_service)) +
+1689205584827:geom_point(size=5) +
+1689205584827:theme(text = element_text(size=16)) +
+1689205584828:labs(x="Flight distance", y="Inflight service", title = "K=5")
+1689205588122:p2
+1689205594984:model_10 <- ml_kmeans(df_clusterization, cluster_formula, seed = 1, k = 10)
+1689205600595:p3 <- model_10$centers %>%
+1689205600598:ggplot(aes(Flight_Distance, Inflight_service, Cleanliness, color=Inflight_service)) +
+1689205600599:geom_point(size=5) +
+1689205600599:theme(text = element_text(size=16)) +
+1689205600600:labs(x="Flight distance", y="Inflight service", title = "K=10")
+1689205602901:p3
+1689205873436:#3
+1689205873439:df_clusterization <- trainSet %>% select(Flight_Distance, Inflight_service)
+1689205874183:print(df_clusterization)
+1689205876611:# New Formula
+1689205876614:cluster_formula <- Class ~ Flight_Distance + Inflight_service
+1689205877989:# K-means 5
+1689205877992:model_3 <- ml_kmeans(df_clusterization, cluster_formula, seed = 1, k = 3)
+1689205882194:p1 <- model_3$centers %>%
+1689205882197:ggplot(aes(Flight_Distance, Inflight_service, Cleanliness, color=Inflight_service)) +
+1689205882198:geom_point(size=5) +
+1689205882198:theme(text = element_text(size=16)) +
+1689205882198:labs(x="Flight distance", y="Inflight service", title = "K=3")
+1689205886194:model_5 <- ml_kmeans(df_clusterization, cluster_formula, seed = 1, k = 5)
+1689205890714:p2 <- model_5$centers %>%
+1689205890717:ggplot(aes(Flight_Distance, Inflight_service, Cleanliness, color=Inflight_service)) +
+1689205890717:geom_point(size=5) +
+1689205890718:theme(text = element_text(size=16)) +
+1689205890719:labs(x="Flight distance", y="Inflight service", title = "K=5")
+1689205892063:model_10 <- ml_kmeans(df_clusterization, cluster_formula, seed = 1, k = 10)
+1689205895688:p3 <- model_10$centers %>%
+1689205895689:ggplot(aes(Flight_Distance, Inflight_service, Cleanliness, color=Inflight_service)) +
+1689205895689:geom_point(size=5) +
+1689205895690:theme(text = element_text(size=16)) +
+1689205895690:labs(x="Flight distance", y="Inflight service", title = "K=10")
+1689205897377:p1
+1689205903813:p2
+1689205906150:p3
+1689205947675:#3
+1689205947678:df_clusterization <- trainSet %>% select(Flight_Distance, Inflight_service, Class)
+1689205948123:print(df_clusterization)
+1689205948461:# New Formula
+1689205948462:cluster_formula <- Class ~ Flight_Distance + Inflight_service
+1689205953610:# K-means 5
+1689205953611:model_3 <- ml_kmeans(df_clusterization, cluster_formula, seed = 1, k = 5)
+1689205962569:p1 <- model_3$centers %>%
+1689205962572:ggplot(aes(Flight_Distance, Inflight_service, Cleanliness, color=Inflight_service)) +
+1689205962572:geom_point(size=5) +
+1689205962573:theme(text = element_text(size=16)) +
+1689205962574:labs(x="Flight distance", y="Inflight service", title = "K=3")
+1689205966328:p1
+1689206092288:#3
+1689206092288:df_clusterization <- trainSet %>% select(Flight_Distance, Inflight_service, Class)
+1689206093144:print(df_clusterization)
+1689206096579:# New Formula
+1689206096582:cluster_formula <- Class ~ Flight_Distance + Inflight_service
+1689206099441:# K-means 5
+1689206099442:model_3 <- ml_kmeans(df_clusterization, cluster_formula, seed = 1, k = 3)
+1689206104889:p1 <- model_3$centers %>%
+1689206104892:ggplot(aes(Flight_Distance, Inflight_service, color=Inflight_service)) +
+1689206104892:geom_point(size=5) +
+1689206104893:scale_color_gradientn(colors = rainbow(10)) +
+1689206104893:theme(text = element_text(size=16)) +
+1689206104894:labs(x="Flight distance", y="Inflight service", title = "K=3")
+1689206109901:p1
+1689206322866:#3
+1689206322867:df_clusterization <- trainSet %>% select(Flight_Distance, Inflight_service, Class)
+1689206323804:print(df_clusterization)
+1689206385262:# New Formula
+1689206385265:cluster_formula <- Class ~ Flight_Distance + Inflight_service
+1689206387841:# K-means 5
+1689206387844:model_3 <- ml_kmeans(df_clusterization, cluster_formula, seed = 1, k = 3)
+1689206392519:p1 <- model_3$centers %>%
+1689206392521:ggplot(aes(Flight_Distance, Inflight_service, color=Flight_Distance)) +
+1689206392522:geom_point(size=5) +
+1689206392522:theme(text = element_text(size=16)) +
+1689206392523:labs(x="Flight distance", y="Inflight service", title = "K=3")
+1689206397631:p1

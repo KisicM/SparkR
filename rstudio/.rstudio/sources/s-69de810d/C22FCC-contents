@@ -168,6 +168,40 @@ df <- data.frame(bayes_accuracy=bayes_accuracy,
                  dt_k_cross_fold_accuracy=dt_k_cross_fold_accuracy)
 print(df)
 
-#
+#3
+df_clusterization <- trainSet %>% select(Flight_Distance, Inflight_service, Class)
+print(df_clusterization)
+
+# New Formula
+cluster_formula <- Class ~ Flight_Distance + Inflight_service
+
+# K-means 5
+model_3 <- ml_kmeans(df_clusterization, cluster_formula, seed = 1, k = 3)
+
+p1 <- model_3$centers %>%
+  ggplot(aes(Flight_Distance, Inflight_service, color=Flight_Distance)) +
+  geom_point(size=5) +
+  theme(text = element_text(size=16)) +
+  labs(x="Flight distance", y="Inflight service", title = "K=3")
+
+model_5 <- ml_kmeans(df_clusterization, cluster_formula, seed = 1, k = 5)
+
+p2 <- model_5$centers %>%
+  ggplot(aes(Flight_Distance, Inflight_service, color=Inflight_service)) +
+  geom_point(size=5) +
+  theme(text = element_text(size=16)) +
+  labs(x="Flight distance", y="Inflight service", title = "K=5")
+
+model_10 <- ml_kmeans(df_clusterization, cluster_formula, seed = 1, k = 10)
+
+p3 <- model_10$centers %>%
+  ggplot(aes(Flight_Distance, Inflight_service, color=Inflight_service)) +
+  geom_point(size=5) +
+  theme(text = element_text(size=16)) +
+  labs(x="Flight distance", y="Inflight service", title = "K=10")
+
+p1
+p2
+p3
 
 spark_disconnect(sc)
