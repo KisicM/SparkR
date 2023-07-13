@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>R Markdown Example</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      line-height: 1.6;
+      padding: 20px;
+    }
+    h1 {
+      font-size: 24px;
+      margin-top: 0;
+    }
+    h2 {
+      font-size: 20px;
+      margin-bottom: 10px;
+    }
+    pre {
+      background-color: #f5f5f5;
+      padding: 10px;
+      overflow: auto;
+    }
+    code {
+      font-family: Consolas, monospace;
+    }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      margin-bottom: 20px;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 8px;
+    }
+    th {
+      background-color: #f5f5f5;
+    }
+  </style>
+</head>
+<body>
+<h1>R Markdown Example</h1>
+<p>This is an example R Markdown document that demonstrates the code and explains each part.</p>
+<h2>Installation</h2>
+<pre><code>install.packages("tidyverse", repos = "https://cran.rstudio.com")
+install.packages("rlang", repos = "https://cran.rstudio.com") 
+install.packages("dplyr", repos = "https://cran.rstudio.com") 
+install.packages("dbplyr", repos = "https://cran.rstudio.com") 
+install.packages("sparklyr", repos = "https://cran.rstudio.com")</code></pre>
+<p>The code above installs the necessary packages (<code>tidyverse</code>, <code>rlang</code>, <code>dplyr</code>, <code>dbplyr</code>, <code>sparklyr</code>) that are required for the subsequent code.</p>
+<h2>Loading Libraries</h2>
+<pre><code>library(tidyr)
+library(dbplyr)
+library(sparklyr)
+library(dplyr)
+library(ggplot2)</code></pre>
+<p>In this section, the required libraries are loaded using the <code>library()</code> function.</p>
+<h2>Installing Spark</h2>
+<pre><code>spark_install()</code></pre>
+<p>The <code>spark_install()</code> function installs the Spark engine, which will be used for data processing.</p>
+<h2>Connecting to Spark</h2>
+<pre><code>sc &lt;- sparklyr::spark_connect(master = "local")</code></pre>
+<p>The code above establishes a connection to the Spark engine using the <code>spark_connect()</code> function. The <code>master = "local"</code> argument indicates that the Spark engine will run locally.</p>
+<h2>Loading and Preprocessing Data</h2>
+<pre><code>datasetPath &lt;- "/data/train.csv"
+trainSet &lt;- spark_read_csv(sc, name = "train", path = datasetPath, header = TRUE, infer_schema = TRUE)
+trainSet &lt;- na.omit(trainSet)
+
+datasetPath &lt;- "/data/test.csv"
+testSet &lt;- spark_read_csv(sc, name = "test", path = datasetPath, header = TRUE, infer_schema = TRUE)
+testSet &lt;- na.omit(testSet)</code></pre>
+<p>The code above loads the training and test datasets from CSV files using the <code>spark_read_csv()</code> function. The datasets are then processed to remove any rows with missing values using <code>na.omit()</code>.</p>
+<h2>Exploring the Data</h2>
+<pre><code>glimpse(trainSet)
+head(trainSet)</code></pre>
+<p>The <code>glimpse()</code> function provides a summary of the structure of the <code>trainSet</code> dataset, displaying the column names and their data types. The <code>head()</code> function displays the first few rows of the <code>trainSet</code> dataset.</p>
+<h2>Selecting Columns</h2>
+<pre><code>trainFiltered &lt;- trainSet %>% select(Gender, Age, Type_of_Travel, Flight_Distance, Inflight_service, satisfaction)
+head(trainFiltered)
+trainFiltered &lt;- trainFiltered %>% mutate(satisfaction = switch(satisfaction,
+                                                               "satisfied"=1,
+                                                               "neutral or dissatisfied"=0))
+testFiltered &lt;- testSet %>% select(Gender, Age, Type_of_Travel, Flight_Distance, Inflight_service, satisfaction)
+head(testFiltered)
+testFiltered &lt;- testFiltered %>% mutate(satisfaction = switch(satisfaction,
+                                                              "satisfied"=1,
+                                                              "neutral or dissatisfied"=0))
+head(testFiltered)</code></pre>
+<p>In this section, the code selects specific columns from the datasets using the <code>select()</code> function. The <code>mutate()</code> function is used to convert the <code>satisfaction</code> column into a binary variable, where "satisfied" is represented by 1 and "neutral or dissatisfied" is represented by 0.</p>
+<h2>Logistic Regression Model</h2>
+<pre><code>formula &lt;- satisfaction ~ Gender + Age + Type_of_Travel + Flight_Distance + Inflight_service
+samples &lt;- c(1:4)
+max_iterations &lt;- samples * 4
+weighted_precision &lt;- samples
+weighted_recall &lt;- samples
+weighted_f_measure &lt;- samples
+area_under_roc &lt;- samples
+accuracy &lt;- samples
+
+for(i in samples){
+  model &lt;- ml_logistic_regression(trainFiltered,
+                                 formula,
+                                 max_iter = max_iterations[i],
+                                 family = "binomial")
+  evaluation &lt;- ml_evaluate(model, dataset=testFiltered)
+  weighted_precision[i] &lt;- evaluation$weighted_precision()
+  weighted_recall[i] &lt;- evaluation$weighted_recall()
+  weighted_f_measure[i] &lt;- evaluation$weighted_f_measure()
+  area_under_roc[i] &lt;- evaluation$area_under_roc()
+  accuracy[i] &lt;- evaluation$accuracy()
+}
+
+df &lt;- data.frame(i=max_iterations,
+                 wp=weighted_precision,
+                 wr=weighted_recall,
+                 wf=weighted_f_measure,
+                 aur=area_under_roc,
+                 a=accuracy)
+print(df)</code></pre>
+<p>The code above performs logistic regression on the <code>trainFiltered</code> dataset using the <code>ml_logistic_regression()</code> function. The loop iterates over different numbers of iterations to evaluate the model's performance using the <code>ml_evaluate()</code> function. The results are stored in a data frame called <code>df</code> and then printed.</p>
+<img src="rstudio/logistic_p1.png" alt="p1" />
+<img src="rstudio/logistic_p2.png" alt="p1" />
+<hr>
+<img src="rstudio/logistic_p3.png" alt="p1" />
+<img src="rstudio/logistic_p4.png" alt="p1" />
+<hr>
+<img src="rstudio/logistic_p5.png" alt="p1" />
+
+<h2>Naive Bayes, Linear SVC, and Decision Tree Models</h2>
+<pre><code>bayes_model &lt;- ml_naive_bayes(trainFiltered, formula)
+
+svc_model &lt;- ml_linear_svc(trainFiltered, formula)
+
+dt_model &lt;- ml_decision_tree_classifier(trainFiltered, formula)
+
+bayes_accuracy &lt;- ml_evaluate(bayes_model, dataset=testFiltered)$Accuracy
+svc_accuracy &lt;- ml_evaluate(svc_model, dataset=testFiltered)$Accuracy
+dt_accuracy &lt;- ml_evaluate(dt_model, dataset=testFiltered)$Accuracy
+
+k_cross_fold_validation &lt;- function(dataset, model, formula){
+  dataset &lt;- dataset %&gt;%
+    sdf_random_split(seed=1,
+                     s1=0.25,
+                     s2=0.25,
+                     s3=0.25,
+                     s4=0.25)
+  training &lt;- list(
+    s1 = sdf_bind_rows(dataset$s2, dataset$s3, dataset$s4),
+    s2 = sdf_bind_rows(dataset$s1, dataset$s3, dataset$s4)
+  )
+  
+  trained = list(s1=model(training$s1, formula),
+                 s2=model(training$s2, formula)
+  )
+  
+  model.accuracy &lt;- (ml_evaluate(trained$s1, dataset$s1)$Accuracy +
+                       ml_evaluate(trained$s2, dataset$s2)$Accuracy) / 2
+}
+
+bayes_k_cross_fold_accuracy &lt;- k_cross_fold_validation(trainFiltered, ml_naive_bayes, formula)
+svc_k_cross_fold_accuracy &lt;- k_cross_fold_validation(trainFiltered, ml_linear_svc, formula)
+dt_k_cross_fold_accuracy &lt;- k_cross_fold_validation(trainFiltered, ml_decision_tree_classifier, formula)
+
+df &lt;- data.frame(bayes_accuracy=bayes_accuracy,
+                 bayes_k_cross_fold_accuracy=bayes_k_cross_fold_accuracy,
+                 svc_accuracy=svc_accuracy,
+                 svc_k_cross_fold_accuracy=svc_k_cross_fold_accuracy,
+                 dt_accuracy=dt_accuracy,
+                 dt_k_cross_fold_accuracy=dt_k_cross_fold_accuracy)
+print(df)</code></pre>
+<p>In this section, additional machine learning models (Naive Bayes, Linear SVC, and Decision Tree) are trained and evaluated using the <code>ml_naive_bayes()</code>, <code>ml_linear_svc()</code>, and <code>ml_decision_tree_classifier()</code> functions. The <code>k_cross_fold_validation()</code> function performs k-fold cross-validation on the training dataset.</p>
+<h2>Data Clusterization</h2>
+<pre><code>df_clusterization &lt;- trainSet %>% select(Flight_Distance, Inflight_service, Class)
+print(df_clusterization)</code></pre>
+<p>The code above selects specific columns (<code>Flight_Distance</code>, <code>Inflight_service</code>, <code>Class</code>) from the <code>trainSet</code> dataset and prints the resulting data frame.</p>
+<h2>K-means Clustering</h2>
+<pre><code>cluster_formula &lt;- Class ~ Flight_Distance + Inflight_service
+
+model_3 &lt;- ml_kmeans(df_clusterization, cluster_formula, seed = 1, k = 3)
+
+model_5 &lt;- ml_kmeans(df_clusterization, cluster_formula, seed = 1, k = 5)
+
+model_10 &lt;- ml_kmeans(df_clusterization, cluster_formula, seed = 1, k = 10)</code></pre>
+<p>The code above performs k-means clustering on the <code>df_clusterization</code> dataset using the <code>ml_kmeans()</code> function. Three different models are trained with different values of <code>k</code> (3, 5, and 10).</p>
+<h2>Visualizing Clusters</h2>
+<pre><code>p1 &lt;- model_3$centers %&gt;%
+  ggplot(aes(Flight_Distance, Inflight_service, color=Flight_Distance)) +
+  geom_point(size=5) +
+  theme(text = element_text(size=16)) +
+  labs(x="Flight distance", y="Inflight service", title = "K=3")
+
+p2 &lt;- model_5$centers %&gt;%
+  ggplot(aes(Flight_Distance, Inflight_service, color=Inflight_service)) +
+  geom_point(size=5) +
+  theme(text = element_text(size=16)) +
+  labs(x="Flight distance", y="Inflight service", title = "K=5")
+
+p3 &lt;- model_10$centers %&gt;%
+  ggplot(aes(Flight_Distance, Inflight_service, color=Inflight_service)) +
+  geom_point(size=5) +
+  theme(text = element_text(size=16)) +
+  labs(x="Flight distance", y="Inflight service", title = "K=10")
+
+  
+</code></pre>
+<img src="rstudio/cluster_p1.png" alt="p1" />
+<img src="rstudio/cluster_p2.png" alt="p2" />
+<hr>
+<img src="rstudio/cluster_p3.png" alt="p3" />
+<p>In this section, the resulting cluster centers from the k-means models are visualized using ggplot2. Three plots are created, each representing a different number of clusters (<code>K=3</code>, <code>K=5</code>, <code>K=10</code>).</p>
+<h2>Disconnecting from Spark</h2>
+<pre><code>spark_disconnect(sc)</code></pre>
+<p>The <code>spark_disconnect()</code> function is called to terminate the connection to the Spark engine.</p>
+</body>
+</html>

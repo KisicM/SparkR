@@ -2363,3 +2363,125 @@
 1689206392522:theme(text = element_text(size=16)) +
 1689206392523:labs(x="Flight distance", y="Inflight service", title = "K=3")
 1689206397631:p1
+1689206468198:spark_disconnect(sc)
+1689207157480:library(tidyr)
+1689207158498:library(dbplyr)
+1689207159095:library(sparklyr)
+1689207159503:library(dplyr)
+1689207159821:library(ggplot2)
+1689207162499:# Connect
+1689207162502:sc <- sparklyr::spark_connect(master = "local")
+1689207175223:datasetPath <- "/data/train.csv"
+1689207175229:trainSet <- spark_read_csv(sc, name = "train", path = datasetPath, header = TRUE, infer_schema = TRUE)
+1689207179176:trainSet <- na.omit(trainSet)
+1689207180017:datasetPath <- "/data/test.csv"
+1689207180018:testSet <- spark_read_csv(sc, name = "test", path = datasetPath, header = TRUE, infer_schema = TRUE)
+1689207181188:testSet <- na.omit(testSet)
+1689207188681:# Select columns:
+1689207188684:trainFiltered <- trainSet %>% select(Gender, Age, Type_of_Travel, Flight_Distance, Inflight_service, satisfaction)
+1689207189202:head(trainFiltered)
+1689207190224:trainFiltered <- trainFiltered %>% mutate(satisfaction = switch(satisfaction,
+1689207190224:"satisfied"=1,
+1689207190224:"neutral or dissatisfied"=0))
+1689207190927:testFiltered <- testSet %>% select(Gender, Age, Type_of_Travel, Flight_Distance, Inflight_service, satisfaction)
+1689207192218:head(testFiltered)
+1689207192656:testFiltered <- testFiltered %>% mutate(satisfaction = switch(satisfaction,
+1689207192656:"satisfied"=1,
+1689207192657:"neutral or dissatisfied"=0))
+1689207195862:head(testFiltered)
+1689207199976:#1
+1689207199979:formula <- satisfaction ~ Gender + Age + Type_of_Travel + Flight_Distance + Inflight_service
+1689207201707:samples <- c(1:4)
+1689207202179:max_iterations <- samples * 4
+1689207202702:weighted_precision <- samples
+1689207202940:weighted_recall <- samples
+1689207203152:weighted_f_measure <- samples
+1689207203487:area_under_roc <- samples
+1689207203827:accuracy <- samples
+1689207205209:for(i in samples){
+1689207205215:model <- ml_logistic_regression(trainFiltered,
+1689207205216:formula,
+1689207205217:max_iter = max_iterations[i],
+1689207205218:family = "binomial")
+1689207205219:evaluation <- ml_evaluate(model, dataset=testFiltered)
+1689207205220:weighted_precision[i] <- evaluation$weighted_precision()
+1689207205221:weighted_recall[i] <- evaluation$weighted_recall()
+1689207205222:weighted_f_measure[i] <- evaluation$weighted_f_measure()
+1689207205223:area_under_roc[i] <- evaluation$area_under_roc()
+1689207205224:accuracy[i] <- evaluation$accuracy()
+1689207205225:}
+1689207230565:df <- data.frame(i=max_iterations,
+1689207230568:wp=weighted_precision,
+1689207230569:wr=weighted_recall,
+1689207230569:wf=weighted_f_measure,
+1689207230570:aur=area_under_roc,
+1689207230570:a=accuracy)
+1689207231928:print(df)
+1689207234536:p1 <- df %>%
+1689207234539:ggplot(aes(i, wp, color=wp)) +
+1689207234539:geom_line(size=2) +
+1689207234539:scale_x_continuous(breaks=max_iterations) +
+1689207234540:scale_y_continuous(breaks=weighted_precision) +
+1689207234540:theme(text = element_text(size = 16)) +
+1689207234541:labs(x="Iterations", y="Precision")
+1689207235832:p2 <- df %>%
+1689207235835:ggplot(aes(i, wr, color=wr)) +
+1689207235836:geom_line(size=2) +
+1689207235836:scale_x_continuous(breaks=max_iterations) +
+1689207235837:scale_y_continuous(breaks=weighted_recall) +
+1689207235837:theme(text = element_text(size = 16)) +
+1689207235838:labs(x="Iterations", y="Recall")
+1689207237128:p3 <- df %>%
+1689207237131:ggplot(aes(i, a, color=a)) +
+1689207237131:geom_line(size=2) +
+1689207237131:scale_x_continuous(breaks=max_iterations) +
+1689207237132:scale_y_continuous(breaks=accuracy) +
+1689207237132:theme(text = element_text(size = 16)) +
+1689207237133:labs(x="Iterations", y="Accuracy")
+1689207237930:p4 <- df %>%
+1689207237933:ggplot(aes(i, aur, color=aur)) +
+1689207237933:geom_line(size=2) +
+1689207237935:scale_x_continuous(breaks=max_iterations) +
+1689207237936:scale_y_continuous(breaks=area_under_roc) +
+1689207237936:theme(text = element_text(size = 16)) +
+1689207237937:labs(x="Iterations", y="Area under ROC")
+1689207238534:p5 <- df %>%
+1689207238537:ggplot(aes(i, wf, color=wf)) +
+1689207238538:geom_line(size=2) +
+1689207238539:scale_x_continuous(breaks=max_iterations) +
+1689207238539:scale_y_continuous(breaks=weighted_f_measure) +
+1689207238540:theme(text = element_text(size = 16)) +
+1689207238540:labs(x="Iterations", y="F measure")
+1689207239791:p1
+1689207273897:p2
+1689207295213:p3
+1689207320718:p4
+1689207333215:p5
+1689207404775:#3
+1689207404778:df_clusterization <- trainSet %>% select(Flight_Distance, Inflight_service, Class)
+1689207406987:print(df_clusterization)
+1689207408589:# New Formula
+1689207408592:cluster_formula <- Class ~ Flight_Distance + Inflight_service
+1689207410047:# K-means 5
+1689207410050:model_3 <- ml_kmeans(df_clusterization, cluster_formula, seed = 1, k = 3)
+1689207414777:p1 <- model_3$centers %>%
+1689207414778:ggplot(aes(Flight_Distance, Inflight_service, color=Flight_Distance)) +
+1689207414778:geom_point(size=5) +
+1689207414779:theme(text = element_text(size=16)) +
+1689207414780:labs(x="Flight distance", y="Inflight service", title = "K=3")
+1689207416961:model_5 <- ml_kmeans(df_clusterization, cluster_formula, seed = 1, k = 5)
+1689207420392:p2 <- model_5$centers %>%
+1689207420395:ggplot(aes(Flight_Distance, Inflight_service, color=Inflight_service)) +
+1689207420396:geom_point(size=5) +
+1689207420396:theme(text = element_text(size=16)) +
+1689207420397:labs(x="Flight distance", y="Inflight service", title = "K=5")
+1689207421299:model_10 <- ml_kmeans(df_clusterization, cluster_formula, seed = 1, k = 10)
+1689207425108:p3 <- model_10$centers %>%
+1689207425111:ggplot(aes(Flight_Distance, Inflight_service, color=Inflight_service)) +
+1689207425112:geom_point(size=5) +
+1689207425112:theme(text = element_text(size=16)) +
+1689207425113:labs(x="Flight distance", y="Inflight service", title = "K=10")
+1689207426149:p1
+1689207439663:p2
+1689207452260:p3
+1689207471191:spark_disconnect(sc)
